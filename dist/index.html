@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>НОВА: ПУТЬ К БИТУ — игровое приключение</title>
+  <meta name="description" content="Сюжетное игровое приключение с незаметным сбором поведенческих показателей">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hud-top">
+      <div class="logo"><b>N</b><span>НОВА // ПУТЬ К БИТУ<small>приключение «Точка интереса»</small></span></div>
+      <div class="hud-center"><span id="stageDots"></span><strong id="stageName">МИССИЯ</strong></div>
+      <button id="logToggle" class="log-toggle" type="button">◉ ЛОГИ</button>
+    </header>
+
+    <section class="game-frame" id="gameFrame">
+      <canvas id="game" width="960" height="540" aria-label="Игровое поле"></canvas>
+      <div class="intro overlay" id="intro">
+        <div class="hero-lockup"><div class="traveler-portrait"><span>🧒</span></div><div class="signal-rings"><i></i><i></i><div class="bit-face">•ᴗ•</div></div></div>
+        <p class="kicker">ЗА ШТОРМОМ ТИШИНЫ</p><h1>Путь к Биту</h1>
+        <p class="intro-story">Его сигнал погас. Но искры ещё ведут вперёд.</p>
+        <div class="intro-icons"><span>🧭</span><b>→</b><span>✦</span><b>→</b><span>🐾</span></div>
+        <div class="age-switch" aria-label="Возраст"><button data-age="7-9">7–9</button><button data-age="10-12" class="active">10–12</button><button data-age="13-14">13–14</button></div>
+        <button id="play" class="play" type="button"><span>▶</span></button>
+        <small>Играй стрелками или WASD · около 8 минут</small>
+      </div>
+      <div class="cutscene overlay hidden" id="cutscene" data-scene="prologue">
+        <div class="cinema" aria-hidden="true">
+          <div class="world-panorama"></div>
+          <div class="world-vignette"></div>
+          <div id="sceneStage" class="scene-stage"></div>
+          <div class="cinema-bars"></div>
+        </div>
+        <div class="scene-copy"><span id="sceneChapter" class="scene-chapter">ПРОЛОГ</span><h2 id="sceneTitle">Сигнал из-за бури</h2><p id="sceneText">Бит пропал. Компас дрогнул.</p><div id="sceneGlyphs" class="scene-glyphs">🧭 · ✦ · 🐾</div></div>
+        <div id="sceneDialogue" class="scene-dialogue">Где-то впереди вспыхнул слабый сигнал…</div>
+        <button id="sceneAction" class="scene-action" type="button"><b>✦</b><span>Поймать сигнал</span></button>
+        <div class="scene-timeline" aria-hidden="true"><i></i><i></i><i></i></div>
+        <button id="sceneContinue" class="scene-continue hidden" type="button">Дальше <span>→</span></button>
+        <button id="sceneSkip" class="scene-skip" type="button">пропустить</button>
+      </div>
+      <div class="mission-card hidden" id="missionCard"><b id="missionIcon">⚡</b><span id="missionText">0 / 3</span></div>
+      <div class="toast" id="toast"></div>
+
+      <div class="puzzle overlay hidden" id="plannerPuzzle">
+        <div class="puzzle-head"><b>2/6</b><span><i id="planRound">1/2</i> · 🤖 → ⚡ → 🚪</span></div>
+        <div class="planner-layout">
+          <div id="planGrid" class="plan-grid" aria-label="Поле маршрута дрона"></div>
+          <div class="programmer">
+            <div id="programQueue" class="program-queue" aria-label="Составленный маршрут"></div>
+            <div class="command-pad">
+              <button data-command="U" aria-label="Добавить движение вверх">▲</button>
+              <button data-command="L" aria-label="Добавить движение влево">◀</button>
+              <button data-command="D" aria-label="Добавить движение вниз">▼</button>
+              <button data-command="R" aria-label="Добавить движение вправо">▶</button>
+            </div>
+            <div class="program-actions"><button id="programUndo" aria-label="Удалить последнюю команду">⌫</button><button id="programRun" class="launch" aria-label="Запустить маршрут">▶</button></div>
+            <div id="planAttempts" class="plan-attempts">○ ○ ○</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="puzzle overlay hidden" id="circuitPuzzle">
+        <div class="puzzle-head"><b>3/6</b><span><i id="circuitRound">1/2</i> · ⚡ → 🐾</span></div>
+        <div class="power-line"><i class="power-source">⚡</i><div id="circuitGrid" class="circuit-grid"></div><i class="power-target">🐾</i></div>
+        <div class="gesture-hint">👆 ↻ <button id="circuitHint" type="button" aria-label="Показать подсказку">?</button></div>
+      </div>
+      <div class="puzzle overlay hidden" id="memoryPuzzle">
+        <div class="puzzle-head"><b>4/6</b><span id="memoryHint">👁️</span></div>
+        <div id="pads" class="pads"><button data-pad="0" aria-label="Бирюзовый сигнал"></button><button data-pad="1" aria-label="Розовый сигнал"></button><button data-pad="2" aria-label="Жёлтый сигнал"></button><button data-pad="3" aria-label="Фиолетовый сигнал"></button></div>
+        <button id="memoryStart" class="round-play" type="button">▶</button><div id="roundMarks" class="round-marks">○ ○</div>
+      </div>
+      <div class="result overlay hidden" id="result">
+        <div class="rescued"><span>🧒</span><div class="bit-face small">•ᴗ•</div><i>♥</i></div>
+        <p class="kicker">МИССИЯ ЗАВЕРШЕНА</p><h2>Бит найден!</h2>
+        <div class="report-status"><b>ПРЕДВАРИТЕЛЬНЫЙ ПРОФИЛЬ</b><span>поведение в этой игре, не диагноз</span></div>
+        <div class="result-grid"><div><b id="planScore">—</b><span>Планирование</span></div><div><b id="problemScore">—</b><span>Решение проблем</span></div><div><b id="regScore">—</b><span>Контроль действий</span></div></div>
+        <p id="resultStory" class="result-story"></p>
+        <div id="reportDetails" class="report-details"></div>
+        <div class="result-actions"><button id="openLogs">Цифровой след</button><button id="again">↻</button></div>
+        <small>Демонстрационные показатели, не психологический диагноз</small>
+      </div>
+    </section>
+
+    <div class="controls" aria-label="Управление"><button data-move="up" aria-label="Вверх">▲</button><div><button data-move="left" aria-label="Влево">◀</button><button data-move="down" aria-label="Вниз">▼</button><button data-move="right" aria-label="Вправо">▶</button></div></div>
+  </main>
+  <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/3</b></span><span>Проблемы<b id="evProblem">0/3</b></span><span>Контроль<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование: полный план до запуска, длина программы, улучшение после обратной связи</span><span>Решение проблем: продуктивные проверки, повторы, перенос во 2-й раунд</span><span>Контроль действий: работа под нагрузкой, смена правила, возврат к цели</span></div><ol id="events"></ol></aside>
+  <script src="app.js"></script>
+</body>
+</html>

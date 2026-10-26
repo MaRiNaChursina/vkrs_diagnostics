@@ -7,7 +7,7 @@
   <meta name="description" content="Сюжетное игровое приключение с незаметным сбором поведенческих показателей">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-stage="intro">
   <main class="shell">
     <header class="hud-top">
       <div class="logo"><b>N</b><span>НОВА // ПУТЬ К БИТУ<small>приключение «Точка интереса»</small></span></div>
@@ -26,6 +26,7 @@
         <div class="age-brief" id="ageBrief" aria-live="polite"><b>ЭКСПЕДИЦИЯ</b><span>2 маршрута · 3 сигнала · 6 ворот</span></div>
         <button id="play" class="play" type="button"><span>▶</span></button>
         <small>Играй стрелками или WASD · около 8 минут</small>
+        <small class="mobile-note">На телефоне удобнее играть горизонтально</small>
       </div>
       <div class="cutscene overlay hidden" id="cutscene" data-scene="prologue">
         <div class="cinema" aria-hidden="true">
@@ -43,6 +44,12 @@
       </div>
       <div class="mission-card hidden" id="missionCard"><b id="missionIcon">⚡</b><span id="missionText">0 / 3</span></div>
       <div class="toast" id="toast"></div>
+      <div class="task-help hidden" id="taskHelp" role="dialog" aria-modal="true" aria-labelledby="taskHelpText">
+        <div class="task-help-card"><strong id="taskHelpGlyph">⚡ → ◉</strong><p id="taskHelpText">Собери искры и найди выход</p><button id="taskHelpStart" type="button" aria-label="Начать задание">▶</button></div>
+      </div>
+      <div class="rotate-notice" id="rotateNotice" role="dialog" aria-label="Поверните телефон">
+        <div><b>↻</b><strong>Поверни телефон</strong><span>Так игровое поле будет крупнее</span><button id="rotateDismiss" type="button">Играть вертикально</button></div>
+      </div>
 
       <div class="puzzle overlay hidden" id="plannerPuzzle">
         <div class="puzzle-head"><b>2/6</b><span><i id="planRound">1/2</i> · 🤖 → ⚡ → 🚪</span></div>

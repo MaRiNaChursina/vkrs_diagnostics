@@ -4,13 +4,14 @@ const ui = id => document.querySelector(`#${id}`);
 const intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
 const plannerPuzzle = ui('plannerPuzzle'), circuitPuzzle = ui('circuitPuzzle'), memoryPuzzle = ui('memoryPuzzle'), result = ui('result'), cutscene = ui('cutscene');
 const logPanel = ui('logPanel'), eventList = ui('events');
+const taskHelp = ui('taskHelp');
 
 const S = {
   age: '10-12', stage: 'intro', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
   observations: { planning: {}, problem: {}, regulation: {} },
   player: { x: 1, y: 1 }, map: [], collected: 0, moves: 0, tool: null, toolSwitches: 0, gateAttempts: 0,
   circuitRotations: 0, circuitClicks: [], memoryErrors: 0, memoryRound: 0,
-  gateHistory: [], routeStarted: 0, adaptGate: 0, adaptErrors: 0, rule: 'blue', switchPending: false, switchResults: [], chaseHits: 0, recovering: false
+  gateHistory: [], routeStarted: 0, adaptGate: 0, adaptErrors: 0, rule: 'blue', switchPending: false, switchResults: [], chaseHits: 0, recovering: false, taskPaused: false
 };
 
 const labels = { planning: 'планирование', problem: 'решение проблем', regulation: 'контроль действий' };
@@ -61,6 +62,17 @@ const AGE_PROFILES={
   }
 };
 const ageProfile=()=>AGE_PROFILES[S.age];
+const TASK_BRIEFS={
+  tutorial:{glyph:'⚡ → ◉',text:'Собери все искры и найди выход'},
+  planner:{glyph:'🤖 → ⚡ → 🚪',text:'Задай маршрут до энергии и выхода'},
+  circuit:{glyph:'⚡ — ↻ — 🐾',text:'Поверни линии и соедини цепь'},
+  memory:{glyph:'👁️ → 🎨 → 👆',text:'Запомни цвета и повтори порядок'},
+  adapt:{glyph:'🔵 / 🩷',text:'Выбирай цвет, показанный сверху'},
+  chase:{glyph:'🧒 → 🐾',text:'Доберись до Бита, обходя ✦'}
+};
+function setStage(stage){S.stage=stage;document.body.dataset.stage=stage;}
+function announceTask(key){const task=TASK_BRIEFS[key];S.taskPaused=true;ui('taskHelpGlyph').textContent=task.glyph;ui('taskHelpText').textContent=task.text;taskHelp.classList.remove('hidden');track('task_instruction_shown',{task:key,text:task.text});}
+ui('taskHelpStart').onclick=()=>{taskHelp.classList.add('hidden');S.taskPaused=false;track('task_instruction_closed',{task:S.stage});};
 function stamp(){ const s=Math.floor((performance.now()-S.started)/1000); return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 function track(name,payload={},competency=null,weight=0){
   S.events.push({time:stamp(),name,payload,competency,weight,stage:S.stage});
@@ -83,7 +95,7 @@ function renderEvidence(){
 }
 function toast(text,ms=850){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),ms); }
 function stageUI(n,name,icon,text){ ui('stageName').textContent=name; ui('stageDots').textContent='●'.repeat(n)+'○'.repeat(6-n); missionCard.classList.remove('hidden'); ui('missionIcon').textContent=icon; ui('missionText').textContent=text; }
-function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result].forEach(x=>x.classList.add('hidden')); }
+function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
 
 const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" alt=""><img class="story-bit" src="assets/bit-character.png" alt="">`;
 const storyScenes={
@@ -97,7 +109,7 @@ const storyScenes={
 };
 let storyNext=null,storyTimer=null;
 function showCutscene(id,next){
-  const scene=storyScenes[id];hideOverlays();missionCard.classList.add('hidden');S.stage='cutscene';storyNext=next;cutscene.dataset.scene=id;cutscene.dataset.pose=id;
+  const scene=storyScenes[id];hideOverlays();missionCard.classList.add('hidden');setStage('cutscene');storyNext=next;cutscene.dataset.scene=id;cutscene.dataset.pose=id;
   cutscene.classList.remove('resolved','shot-0','shot-1','shot-2');cutscene.classList.add('shot-0');
   ui('sceneChapter').textContent=scene.chapter;ui('sceneTitle').textContent=scene.title;ui('sceneText').textContent=scene.text;ui('sceneGlyphs').textContent=scene.glyphs;ui('sceneDialogue').textContent=scene.dialogue;
   ui('sceneStage').innerHTML=actorMarkup(scene)+scene.event;ui('sceneAction').innerHTML=`<b>${scene.icon}</b><span>${scene.action}</span>`;ui('sceneAction').classList.add('hidden');ui('sceneContinue').classList.add('hidden');
@@ -117,22 +129,23 @@ function beep(freq=440,d=.08){ try{ audio ||= new AudioContext(); const o=audio.
 function updateAgeIntro(){const profile=ageProfile();ui('ageBrief').innerHTML=`<b>${profile.label}</b><span>${profile.brief}</span>`;}
 document.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{ document.querySelectorAll('[data-age]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); S.age=b.dataset.age; updateAgeIntro(); });
 updateAgeIntro();
-ui('play').onclick=()=>{ beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
-ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='МИССИЯ'; ui('stageDots').textContent=''; S.stage='intro'; };
+ui('play').onclick=()=>{ document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
+ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='МИССИЯ'; ui('stageDots').textContent=''; setStage('intro');document.body.classList.remove('game-active','portrait-ok'); };
+ui('rotateDismiss').onclick=()=>document.body.classList.add('portrait-ok');
 ui('logToggle').onclick=()=>logPanel.classList.toggle('open'); ui('logClose').onclick=()=>logPanel.classList.remove('open'); ui('openLogs').onclick=()=>logPanel.classList.add('open');
 
-function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},collected:0,moves:0,tool:null,toolSwitches:0,gateAttempts:0,circuitRotations:0,circuitClicks:[],memoryErrors:0,memoryRound:0,gateHistory:[],routeStarted:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7}}); eventList.innerHTML=''; renderEvidence(); track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'evidence-model-v6-age-tasks'}); }
+function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},collected:0,moves:0,tool:null,toolSwitches:0,gateAttempts:0,circuitRotations:0,circuitClicks:[],memoryErrors:0,memoryRound:0,gateHistory:[],routeStarted:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7},taskPaused:false}); eventList.innerHTML=''; renderEvidence(); track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'evidence-model-v7-mobile'}); }
 
 const routeMap=[
   '################','#..A...B...D...#','#..#...#...#...#','#..#...#...#...#','#..#...#...#...#','#..............#','#..m...f...r...#','#......P.......#','################'
 ];
 
 function loadMap(rows){ S.map=rows.map(r=>r.split('')); for(let y=0;y<S.map.length;y++)for(let x=0;x<S.map[y].length;x++)if(S.map[y][x]==='P'){S.player={x,y};S.chaseStart={x,y};S.map[y][x]='.';} }
-function startTutorial(){ const profile=ageProfile();hideOverlays(); S.stage='tutorial'; S.collected=0; S.moves=0; loadMap(profile.tutorialMap); stageUI(1,'ПОЙМАЙ СИГНАЛ','⚡',`0 / ${profile.tutorialTarget}`); track('tutorial_started',{age:S.age,target:profile.tutorialTarget,mapVersion:profile.label}); }
-function startRoute(){ S.stage='route'; S.moves=0; S.tool=null; S.gateHistory=[]; S.routeStarted=performance.now(); loadMap(routeMap); stageUI(2,'ВЫБЕРИ ПУТЬ','🎒','×1'); track('planning_trial_started'); toast('🎒 → 🚪'); }
+function startTutorial(){ const profile=ageProfile();hideOverlays(); setStage('tutorial'); S.collected=0; S.moves=0; loadMap(profile.tutorialMap); stageUI(1,'ПОЙМАЙ СИГНАЛ','⚡',`0 / ${profile.tutorialTarget}`); track('tutorial_started',{age:S.age,target:profile.tutorialTarget,mapVersion:profile.label});announceTask('tutorial'); }
+function startRoute(){ setStage('route'); S.moves=0; S.tool=null; S.gateHistory=[]; S.routeStarted=performance.now(); loadMap(routeMap); stageUI(2,'ВЫБЕРИ ПУТЬ','🎒','×1'); track('planning_trial_started'); toast('🎒 → 🚪'); }
 
 function move(dx,dy){
-  if(!['tutorial','route','chase'].includes(S.stage)) return;
+  if(S.taskPaused||!['tutorial','route','chase'].includes(S.stage)) return;
   const nx=S.player.x+dx,ny=S.player.y+dy; const cell=S.map[ny]?.[nx]; if(!cell||cell==='#'){beep(150);return;}
   if(S.stage==='route' && 'ABD'.includes(cell)){ tryGate(cell); return; }
   S.player={x:nx,y:ny}; S.moves++;
@@ -150,25 +163,25 @@ const commandDelta={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0]},commandIcon={U:'▲',D:'�
 let planRound=0,planQueue=[],planRobot={x:0,y:0},planStart={x:0,y:0},planCheckpoint=false,planAttempts=0,planTrials=[],planningSummary=null,planRunning=false,planRoundStartedAt=0,planFirstProgram='',planPreviousProgress=-1,planRevisionImproved=false,planHit=null;
 
 function startPlanner(){
-  hideOverlays();S.stage='planner';plannerPuzzle.classList.remove('hidden');missionCard.classList.add('hidden');ui('stageName').textContent='ЗАПРОГРАММИРУЙ ДРОНА';ui('stageDots').textContent='●●○○○○';planRound=0;planTrials=[];planningSummary=null;
+  hideOverlays();setStage('planner');plannerPuzzle.classList.remove('hidden');missionCard.classList.add('hidden');ui('stageName').textContent='ЗАПРОГРАММИРУЙ ДРОНА';ui('stageDots').textContent='●●○○○○';planRound=0;planTrials=[];planningSummary=null;
   document.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>addPlanCommand(b.dataset.command));ui('programUndo').onclick=undoPlanCommand;ui('programRun').onclick=runPlanProgram;
-  beginPlanRound();track('planning_task_started',{age:S.age,rounds:ageProfile().planLevels.length,commandLimit:ageProfile().commandLimit,rule:'program_before_launch'});
+  beginPlanRound();track('planning_task_started',{age:S.age,rounds:ageProfile().planLevels.length,commandLimit:ageProfile().commandLimit,rule:'program_before_launch'});announceTask('planner');
 }
 function beginPlanRound(){
   const levels=ageProfile().planLevels,level=levels[planRound];planQueue=[];planAttempts=0;planCheckpoint=false;planRunning=false;planRoundStartedAt=performance.now();planFirstProgram='';planPreviousProgress=-1;planRevisionImproved=false;planHit=null;
   level.rows.forEach((row,y)=>[...row].forEach((cell,x)=>{if(cell==='S')planStart={x,y};}));planRobot={...planStart};ui('planRound').textContent=`${planRound+1}/${levels.length}`;ui('planAttempts').textContent='○ ○ ○';renderPlanner();track('planning_round_started',{age:S.age,round:planRound+1,optimalCommands:level.optimal,commandLimit:ageProfile().commandLimit});
 }
 function addPlanCommand(command){
-  if(planRunning||planQueue.length>=ageProfile().commandLimit)return;planQueue.push(command);track('plan_command_added',{round:planRound+1,command,position:planQueue.length});renderPlanQueue();beep(360+planQueue.length*8);
+  if(S.taskPaused||planRunning||planQueue.length>=ageProfile().commandLimit)return;planQueue.push(command);track('plan_command_added',{round:planRound+1,command,position:planQueue.length});renderPlanQueue();beep(360+planQueue.length*8);
 }
-function undoPlanCommand(){if(planRunning||!planQueue.length)return;const removed=planQueue.pop();track('plan_command_removed',{round:planRound+1,command:removed,remaining:planQueue.length});renderPlanQueue();}
+function undoPlanCommand(){if(S.taskPaused||planRunning||!planQueue.length)return;const removed=planQueue.pop();track('plan_command_removed',{round:planRound+1,command:removed,remaining:planQueue.length});renderPlanQueue();}
 function renderPlanQueue(){ui('programQueue').innerHTML=planQueue.length?planQueue.map(c=>`<span>${commandIcon[c]}</span>`).join(''):'<span class="empty">…</span>';ui('programRun').disabled=!planQueue.length||planRunning;ui('programUndo').disabled=!planQueue.length||planRunning;document.querySelectorAll('[data-command]').forEach(b=>b.disabled=planRunning);}
 function renderPlanner(){
   const level=ageProfile().planLevels[planRound];ui('plannerPuzzle').querySelector('.planner-layout').classList.toggle('running',planRunning);
   ui('planGrid').innerHTML=level.rows.flatMap((row,y)=>[...row].map((cell,x)=>{const robot=planRobot.x===x&&planRobot.y===y;let icon='';if(robot)icon='🤖';else if(cell==='C'&&!planCheckpoint)icon='⚡';else if(cell==='G')icon='🚪';return `<div class="plan-cell ${cell==='#'?'wall':''} ${robot?'robot':''} ${planHit&&planHit.x===x&&planHit.y===y?'hit':''}">${icon}</div>`;})).join('');renderPlanQueue();
 }
 async function runPlanProgram(){
-  if(planRunning||!planQueue.length)return;planRunning=true;planAttempts++;planHit=null;planRobot={...planStart};planCheckpoint=false;if(planAttempts===1)planFirstProgram=planQueue.join('');ui('planAttempts').textContent='● '.repeat(Math.min(planAttempts,3))+'○ '.repeat(Math.max(0,3-planAttempts));renderPlanner();
+  if(S.taskPaused||planRunning||!planQueue.length)return;planRunning=true;planAttempts++;planHit=null;planRobot={...planStart};planCheckpoint=false;if(planAttempts===1)planFirstProgram=planQueue.join('');ui('planAttempts').textContent='● '.repeat(Math.min(planAttempts,3))+'○ '.repeat(Math.max(0,3-planAttempts));renderPlanner();
   const program=[...planQueue];track('plan_launched',{round:planRound+1,attempt:planAttempts,commands:program.join(''),length:program.length,prelaunchMs:planAttempts===1?Math.round(performance.now()-planRoundStartedAt):null});let completed=false,executed=0,reason='program_ended';
   for(const command of program){
     const [dx,dy]=commandDelta[command],nx=planRobot.x+dx,ny=planRobot.y+dy;const cell=ageProfile().planLevels[planRound].rows[ny]?.[nx];executed++;
@@ -213,12 +226,12 @@ const solutionMasks=[6,6,12,10,9,3,3,10,9];
 let rotations=[],circuitHintUsed=false,circuitDone=false,circuitRound=0,circuitTrials=[],lastConnected=0,productiveActions=0;
 function rotateMask(mask,times){let m=mask;for(let i=0;i<times;i++)m=((m<<1)&15)|((m>>3)&1);return m;}
 function pipeChar(m){return({10:'─',5:'│',6:'┌',12:'┐',9:'┘',3:'└'}[m]||'•');}
-function startCircuit(){ const rounds=ageProfile().circuitStarts.length;S.stage='circuit'; hideOverlays(); circuitPuzzle.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='ЗАЖГИ МАЯК'; ui('stageDots').textContent='●●●○○○'; circuitRound=0;circuitTrials=[];beginCircuitRound();ui('circuitHint').onclick=showCircuitHint;track('circuit_started',{age:S.age,goal:'connect_source_to_target',rounds}); }
+function startCircuit(){ const rounds=ageProfile().circuitStarts.length;hideOverlays();setStage('circuit'); circuitPuzzle.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='ЗАЖГИ МАЯК'; ui('stageDots').textContent='●●●○○○'; circuitRound=0;circuitTrials=[];beginCircuitRound();ui('circuitHint').onclick=showCircuitHint;track('circuit_started',{age:S.age,goal:'connect_source_to_target',rounds});announceTask('circuit'); }
 function beginCircuitRound(){const starts=ageProfile().circuitStarts;rotations=[...starts[circuitRound]];circuitHintUsed=false;circuitDone=false;S.circuitRotations=0;S.circuitClicks=[];productiveActions=0;lastConnected=circuitState().powered.size;ui('circuitRound').textContent=`${circuitRound+1}/${starts.length}`;renderCircuit();track('circuit_round_started',{age:S.age,round:circuitRound+1});}
 function renderCircuit(){
   const state=circuitState();
   ui('circuitGrid').innerHTML=solutionMasks.map((m,i)=>`<button data-tile="${i}" class="${state.powered.has(i)?'powered':''}" aria-label="Повернуть элемент цепи">${pipeChar(rotateMask(m,rotations[i]))}</button>`).join('');
-  ui('circuitGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(circuitDone)return;const i=+b.dataset.tile;rotations[i]=(rotations[i]+1)%4;S.circuitRotations++;S.circuitClicks.push(i);beep(330+rotations[i]*70);const next=circuitState();if(next.powered.size>lastConnected)productiveActions++;track('circuit_tile_rotated',{round:circuitRound+1,tile:i,connected:next.powered.size,delta:next.powered.size-lastConnected,rotation:rotations[i]});lastConnected=next.powered.size;renderCircuit();if(next.solved)finishCircuit();});
+  ui('circuitGrid').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(S.taskPaused||circuitDone)return;const i=+b.dataset.tile;rotations[i]=(rotations[i]+1)%4;S.circuitRotations++;S.circuitClicks.push(i);beep(330+rotations[i]*70);const next=circuitState();if(next.powered.size>lastConnected)productiveActions++;track('circuit_tile_rotated',{round:circuitRound+1,tile:i,connected:next.powered.size,delta:next.powered.size-lastConnected,rotation:rotations[i]});lastConnected=next.powered.size;renderCircuit();if(next.solved)finishCircuit();});
 }
 function circuitState(){
   const masks=solutionMasks.map((m,i)=>rotateMask(m,rotations[i]));const powered=new Set();
@@ -243,17 +256,17 @@ function finishCircuit(){
 }
 
 let sequence=[],input=[],showing=false;
-function startMemory(){ S.stage='memory'; hideOverlays(); memoryPuzzle.classList.remove('hidden'); ui('stageName').textContent='ЭХО БИТА'; ui('stageDots').textContent='●●●●○○'; ui('roundMarks').textContent='○ ○'; ui('memoryHint').textContent='👁️'; ui('memoryStart').classList.remove('hidden'); S.memoryRound=0; bindPads(); track('memory_started'); }
+function startMemory(){ hideOverlays();setStage('memory'); memoryPuzzle.classList.remove('hidden'); ui('stageName').textContent='ЭХО БИТА'; ui('stageDots').textContent='●●●●○○'; ui('roundMarks').textContent='○ ○'; ui('memoryHint').textContent='👁️'; ui('memoryStart').classList.remove('hidden'); S.memoryRound=0; bindPads(); track('memory_started');announceTask('memory'); }
 function bindPads(){ document.querySelectorAll('[data-pad]').forEach(b=>b.onclick=()=>padInput(+b.dataset.pad)); ui('memoryStart').onclick=beginMemoryRound; }
 function beginMemoryRound(){ const profile=ageProfile();sequence=profile.memorySets[S.memoryRound]; input=[]; ui('memoryStart').classList.add('hidden'); track('memory_round_started',{age:S.age,round:S.memoryRound+1,length:sequence.length,paceMs:profile.memoryPace});showSequence(); }
 async function showSequence(){ showing=true; ui('memoryHint').textContent='👁️'; await wait(350); for(const p of sequence){ flashPad(p); await wait(ageProfile().memoryPace); } showing=false; ui('memoryHint').textContent='👆'; }
 function flashPad(i){ const b=document.querySelector(`[data-pad="${i}"]`); b.classList.add('flash'); beep([420,520,620,720][i]); setTimeout(()=>b.classList.remove('flash'),260); }
-function padInput(i){ if(showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); toast('↻'); input=[]; setTimeout(showSequence,650); return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++; ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit});beep(980,.2);setTimeout(()=>showCutscene('gates',startAdapt),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
+function padInput(i){ if(S.taskPaused||showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); toast('↻'); input=[]; setTimeout(showSequence,650); return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++; ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit});beep(980,.2);setTimeout(()=>showCutscene('gates',startAdapt),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function startAdapt(){ const profile=ageProfile();hideOverlays(); S.stage='adapt'; S.adaptGate=0; S.adaptErrors=0; S.rule='blue'; S.switchPending=false; S.switchResults=[]; stageUI(5,'ВОРОТА БУРИ','🔵',`0 / ${profile.adaptDoors.length}`); track('adaptation_started',{age:S.age,rule:'blue',gates:profile.adaptDoors.length,switches:profile.adaptSwitches.length}); }
+function startAdapt(){ const profile=ageProfile();hideOverlays(); setStage('adapt'); S.adaptGate=0; S.adaptErrors=0; S.rule='blue'; S.switchPending=false; S.switchResults=[]; stageUI(5,'ВОРОТА БУРИ','🔵',`0 / ${profile.adaptDoors.length}`); track('adaptation_started',{age:S.age,rule:'blue',gates:profile.adaptDoors.length,switches:profile.adaptSwitches.length});announceTask('adapt'); }
 function adaptChoice(lane){
-  const profile=ageProfile();if(S.adaptGate>=profile.adaptDoors.length)return;const colors=profile.adaptDoors[S.adaptGate]; const chosen=colors[lane];
+  const profile=ageProfile();if(S.taskPaused||S.adaptGate>=profile.adaptDoors.length)return;const colors=profile.adaptDoors[S.adaptGate]; const chosen=colors[lane];
   if(S.switchPending){S.switchResults.push(chosen===S.rule);S.switchPending=false;}
   if(chosen===S.rule){
     track('gate_choice',{gate:S.adaptGate+1,color:chosen,correct:true},'regulation',0); S.adaptGate++; beep(740);
@@ -265,7 +278,7 @@ function adaptChoice(lane){
 }
 
 let glitches=[];
-function startChase(){ const profile=ageProfile();S.stage='chase'; loadMap(profile.chaseMap); glitches=profile.glitches.map(g=>({...g})); S.chaseHits=0; stageUI(6,'СКВОЗЬ ШТОРМ','🐾',`${glitches.length} ✦`); track('chase_started',{age:S.age,glitches:glitches.length,hitLimit:profile.chaseHitLimit}); }
+function startChase(){ const profile=ageProfile();setStage('chase'); loadMap(profile.chaseMap); glitches=profile.glitches.map(g=>({...g})); S.chaseHits=0; stageUI(6,'СКВОЗЬ ШТОРМ','🐾',`${glitches.length} ✦`); track('chase_started',{age:S.age,glitches:glitches.length,hitLimit:profile.chaseHitLimit});announceTask('chase'); }
 function chaseStep(){
   glitches.forEach(g=>{const nx=g.x+g.d;if(nx<=1||nx>=14||S.map[g.y][nx]==='#')g.d*=-1;else g.x=nx;});
   const hit=glitches.some(g=>g.x===S.player.x&&g.y===S.player.y);
@@ -275,7 +288,7 @@ function chaseStep(){
 }
 
 function finishGame(){
-  S.stage='result'; missionCard.classList.add('hidden'); result.classList.remove('hidden');
+  setStage('result');document.body.classList.remove('game-active','portrait-ok');missionCard.classList.add('hidden'); result.classList.remove('hidden');
   const plan=evidenceCount('planning'),problem=evidenceCount('problem'),reg=evidenceCount('regulation');
   const planObserved=evidenceObserved('planning'),problemObserved=evidenceObserved('problem'),regObserved=evidenceObserved('regulation'),totalObserved=planObserved+problemObserved+regObserved;
   ui('planScore').textContent=`${planObserved} факта`;ui('problemScore').textContent=`${problemObserved} факта`;ui('regScore').textContent=`${regObserved} факта`;

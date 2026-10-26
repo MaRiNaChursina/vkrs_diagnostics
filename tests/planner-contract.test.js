@@ -55,7 +55,7 @@ for (const [age, profile] of Object.entries(profiles)) {
   }
 }
 
-assert(source.includes('if(planRunning||planQueue.length>=ageProfile().commandLimit)return'), 'input is blocked while running and capped by age profile');
+assert(source.includes('if(S.taskPaused||planRunning||planQueue.length>=ageProfile().commandLimit)return'), 'input is blocked while paused/running and capped by age profile');
 assert(source.includes("ui('programRun').disabled=!planQueue.length||planRunning"), 'empty/running launch is disabled');
 assert(source.includes("retryTrials.length?retryTrials.some(t=>t.revisionImproved):null"), 'revision is not inferred without an opportunity');
 

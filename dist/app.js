@@ -5,6 +5,7 @@ const intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast'
 const plannerPuzzle = ui('plannerPuzzle'), circuitPuzzle = ui('circuitPuzzle'), memoryPuzzle = ui('memoryPuzzle'), result = ui('result'), cutscene = ui('cutscene');
 const logPanel = ui('logPanel'), eventList = ui('events');
 const taskHelp = ui('taskHelp');
+const taskHelpOpen = ui('taskHelpOpen');
 
 const S = {
   age: '10-12', stage: 'intro', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
@@ -63,16 +64,18 @@ const AGE_PROFILES={
 };
 const ageProfile=()=>AGE_PROFILES[S.age];
 const TASK_BRIEFS={
-  tutorial:{glyph:'⚡ → ◉',text:'Собери все искры и найди выход'},
-  planner:{glyph:'🤖 → ⚡ → 🚪',text:'Задай маршрут до энергии и выхода'},
-  circuit:{glyph:'⚡ — ↻ — 🐾',text:'Поверни линии и соедини цепь'},
-  memory:{glyph:'👁️ → 🎨 → 👆',text:'Запомни цвета и повтори порядок'},
-  adapt:{glyph:'🔵 / 🩷',text:'Выбирай цвет, показанный сверху'},
-  chase:{glyph:'🧒 → 🐾',text:'Доберись до Бита, обходя ✦'}
+  tutorial:{glyph:'🧒  ⚡  ⚡  ◉',text:'Собери ⚡. Потом иди к ◉',tip:'Двигайся стрелками',demo:'<span class="demo-runner">🧒</span><i>⚡</i><i>⚡</i><b>◉</b>'},
+  planner:{glyph:'🤖  →  ⚡  →  🚪',text:'Нажми стрелки. Потом нажми ▶',tip:'Сначала составь весь маршрут',demo:'<span>🤖</span><i class="demo-key">▲</i><i class="demo-key">▶</i><i class="demo-key">▶</i><b>⚡</b><em>🚪</em>'},
+  circuit:{glyph:'⚡  →  🐾',text:'Нажимай на линии — они поворачиваются',tip:'Соедини свет от ⚡ до 🐾',demo:'<b>⚡</b><i class="demo-pipe">└</i><i class="demo-pipe delay">─</i><i class="demo-pipe delay-2">┐</i><em>🐾</em>'},
+  memory:{glyph:'👁️  →  👆',text:'Смотри. Потом нажми так же',tip:'Во время показа только запоминай',demo:'<i class="demo-pad cyan"></i><i class="demo-pad pink"></i><i class="demo-pad yellow"></i><b class="demo-hand">👆</b>'},
+  adapt:{glyph:'ЦВЕТ СВЕРХУ  →  ВОРОТА',text:'Иди в ворота цвета сверху',tip:'Внимание: цвет может измениться',demo:'<b class="demo-rule">🔵 ✓</b><span>🧒</span><i class="demo-door blue"></i><i class="demo-door pink"></i>'},
+  chase:{glyph:'🧒  →  🐾',text:'Доберись до 🐾. Не касайся ✦',tip:'Если столкнулся — продолжай',demo:'<span class="demo-runner">🧒</span><i class="demo-glitch">✦</i><i class="demo-glitch delay">✦</i><b>🐾</b>'}
 };
+let currentTask=null;
 function setStage(stage){S.stage=stage;document.body.dataset.stage=stage;}
-function announceTask(key){const task=TASK_BRIEFS[key];S.taskPaused=true;ui('taskHelpGlyph').textContent=task.glyph;ui('taskHelpText').textContent=task.text;taskHelp.classList.remove('hidden');track('task_instruction_shown',{task:key,text:task.text});}
-ui('taskHelpStart').onclick=()=>{taskHelp.classList.add('hidden');S.taskPaused=false;track('task_instruction_closed',{task:S.stage});};
+function announceTask(key,repeated=false){const task=TASK_BRIEFS[key];currentTask=key;S.taskPaused=true;ui('taskHelpGlyph').textContent=task.glyph;ui('taskHelpDemo').innerHTML=task.demo;ui('taskHelpText').textContent=task.text;ui('taskHelpTip').textContent=task.tip;taskHelpOpen.classList.add('hidden');taskHelp.classList.remove('hidden');track('task_instruction_shown',{task:key,text:task.text,repeated});}
+ui('taskHelpStart').onclick=()=>{taskHelp.classList.add('hidden');taskHelpOpen.classList.remove('hidden');S.taskPaused=false;track('task_instruction_closed',{task:currentTask});};
+taskHelpOpen.onclick=()=>{if(currentTask)announceTask(currentTask,true);};
 function stamp(){ const s=Math.floor((performance.now()-S.started)/1000); return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 function track(name,payload={},competency=null,weight=0){
   S.events.push({time:stamp(),name,payload,competency,weight,stage:S.stage});
@@ -95,17 +98,17 @@ function renderEvidence(){
 }
 function toast(text,ms=850){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),ms); }
 function stageUI(n,name,icon,text){ ui('stageName').textContent=name; ui('stageDots').textContent='●'.repeat(n)+'○'.repeat(6-n); missionCard.classList.remove('hidden'); ui('missionIcon').textContent=icon; ui('missionText').textContent=text; }
-function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
+function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
 
-const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" alt=""><img class="story-bit" src="assets/bit-character.png" alt="">`;
+const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" alt=""><img class="story-bit" src="assets/bit-character.webp" alt="">`;
 const storyScenes={
-  prologue:{chapter:'ПРОЛОГ',title:'Сигнал погас',text:'Компас дрогнул в тёмном лесу.',glyphs:'🧭  ·  ✦  ·  ?',pose:'assets/nova-character.png',action:'Поймать сигнал',icon:'✦',dialogue:'Коснись искры — пусть компас запомнит направление.',after:'Луч ведёт через руины. Бит ещё на связи!',event:'<div class="story-prop signal-spark">✦<i></i><i></i></div><div class="story-prop compass-ray"></div>'},
-  beacon:{chapter:'ГЛАВА I',title:'Дорога над пропастью',text:'Старая платформа ещё может летать.',glyphs:'◉  ·  ⚡  ·  ⛰',pose:'assets/nova-running-v2.png',action:'Запустить дрон',icon:'▶',dialogue:'Разбуди платформу одним импульсом.',after:'Дрон поднялся и показал путь к башне.',event:'<div class="story-prop scene-drone">◉<i></i></div><div class="story-prop flight-trail"></div>'},
-  reactor:{chapter:'ГЛАВА II',title:'Башня без света',text:'Энергия остановилась в проводах.',glyphs:'⚡  ·  ⌁  ·  ◉',pose:'assets/nova-powering-v2.png',action:'Дать импульс',icon:'⚡',dialogue:'Коснись ядра — энергия побежит вверх.',after:'Башня ожила. Вдали ответили кристаллы.',event:'<div class="story-prop energy-pulse">⚡</div><div class="story-prop tower-flare"><i></i><i></i><i></i></div>'},
-  echo:{chapter:'ГЛАВА III',title:'Каньон отвечает',text:'Свет Бита спрятался в кристаллах.',glyphs:'◆  ◇  ◆  ◇',pose:'assets/nova-listening-v2.png',action:'Разбудить эхо',icon:'◆',dialogue:'Коснись кристалла и смотри, как свет идёт дальше.',after:'Цветная волна указала проход к воротам.',event:'<div class="story-prop crystal-echo"><i>◆</i><i>◆</i><i>◆</i><i>◆</i></div>'},
-  gates:{chapter:'ГЛАВА IV',title:'Проход меняет правило',text:'Ворота не держат один цвет.',glyphs:'●  ⇄  ●',pose:'assets/nova-running-v2.png',action:'Сменить цвет',icon:'⇄',dialogue:'Нажми, когда створки вспыхнут другим цветом.',after:'Створки разошлись. За ними уже слышна гроза.',event:'<div class="story-prop story-gate left"></div><div class="story-prop story-gate right"></div><div class="story-prop rule-orb">⇄</div>'},
-  storm:{chapter:'ГЛАВА V',title:'Сквозь грозу',text:'Сигнал Бита почти рядом.',glyphs:'⚡  ·  🧭  ·  🐾',pose:'assets/nova-running-v2.png',action:'Удержать курс',icon:'🧭',dialogue:'Прижми компас — он прорежет помехи лучом.',after:'Молния отступила. В убежище кто-то ждёт.',event:'<div class="story-prop lightning l1"></div><div class="story-prop lightning l2"></div><div class="story-prop storm-shield"></div>'},
-  rescue:{chapter:'ЭПИЛОГ',title:'Бит найден',text:'Тёплый свет дрожит у самого дома.',glyphs:'🧭  ·  ♥  ·  ◉',pose:'assets/nova-reunion-v2.png',action:'Позвать Бита',icon:'♥',dialogue:'Коснись сигнала — пусть Бит услышит Нову.',after:'Сигнал вернулся. Теперь домой — вместе.',event:'<div class="story-prop rescue-wave"><i></i><i></i><i></i></div><div class="story-prop heart-light">♥</div>'}
+  prologue:{chapter:'ПРОЛОГ',title:'Сигнал погас',text:'Компас дрогнул в тёмном лесу.',glyphs:'🧭  ·  ✦  ·  ?',pose:'assets/nova-character.webp',action:'Поймать сигнал',icon:'✦',dialogue:'Коснись искры — пусть компас запомнит направление.',after:'Луч ведёт через руины. Бит ещё на связи!',event:'<div class="story-prop signal-spark">✦<i></i><i></i></div><div class="story-prop compass-ray"></div>'},
+  beacon:{chapter:'ГЛАВА I',title:'Дорога над пропастью',text:'Старая платформа ещё может летать.',glyphs:'◉  ·  ⚡  ·  ⛰',pose:'assets/nova-running-v2.webp',action:'Запустить дрон',icon:'▶',dialogue:'Разбуди платформу одним импульсом.',after:'Дрон поднялся и показал путь к башне.',event:'<div class="story-prop scene-drone">◉<i></i></div><div class="story-prop flight-trail"></div>'},
+  reactor:{chapter:'ГЛАВА II',title:'Башня без света',text:'Энергия остановилась в проводах.',glyphs:'⚡  ·  ⌁  ·  ◉',pose:'assets/nova-powering-v2.webp',action:'Дать импульс',icon:'⚡',dialogue:'Коснись ядра — энергия побежит вверх.',after:'Башня ожила. Вдали ответили кристаллы.',event:'<div class="story-prop energy-pulse">⚡</div><div class="story-prop tower-flare"><i></i><i></i><i></i></div>'},
+  echo:{chapter:'ГЛАВА III',title:'Каньон отвечает',text:'Свет Бита спрятался в кристаллах.',glyphs:'◆  ◇  ◆  ◇',pose:'assets/nova-listening-v2.webp',action:'Разбудить эхо',icon:'◆',dialogue:'Коснись кристалла и смотри, как свет идёт дальше.',after:'Цветная волна указала проход к воротам.',event:'<div class="story-prop crystal-echo"><i>◆</i><i>◆</i><i>◆</i><i>◆</i></div>'},
+  gates:{chapter:'ГЛАВА IV',title:'Проход меняет правило',text:'Ворота не держат один цвет.',glyphs:'●  ⇄  ●',pose:'assets/nova-running-v2.webp',action:'Сменить цвет',icon:'⇄',dialogue:'Нажми, когда створки вспыхнут другим цветом.',after:'Створки разошлись. За ними уже слышна гроза.',event:'<div class="story-prop story-gate left"></div><div class="story-prop story-gate right"></div><div class="story-prop rule-orb">⇄</div>'},
+  storm:{chapter:'ГЛАВА V',title:'Сквозь грозу',text:'Сигнал Бита почти рядом.',glyphs:'⚡  ·  🧭  ·  🐾',pose:'assets/nova-running-v2.webp',action:'Удержать курс',icon:'🧭',dialogue:'Прижми компас — он прорежет помехи лучом.',after:'Молния отступила. В убежище кто-то ждёт.',event:'<div class="story-prop lightning l1"></div><div class="story-prop lightning l2"></div><div class="story-prop storm-shield"></div>'},
+  rescue:{chapter:'ЭПИЛОГ',title:'Бит найден',text:'Тёплый свет дрожит у самого дома.',glyphs:'🧭  ·  ♥  ·  ◉',pose:'assets/nova-reunion-v2.webp',action:'Позвать Бита',icon:'♥',dialogue:'Коснись сигнала — пусть Бит услышит Нову.',after:'Сигнал вернулся. Теперь домой — вместе.',event:'<div class="story-prop rescue-wave"><i></i><i></i><i></i></div><div class="story-prop heart-light">♥</div>'}
 };
 let storyNext=null,storyTimer=null;
 function showCutscene(id,next){
@@ -288,7 +291,7 @@ function chaseStep(){
 }
 
 function finishGame(){
-  setStage('result');document.body.classList.remove('game-active','portrait-ok');missionCard.classList.add('hidden'); result.classList.remove('hidden');
+  setStage('result');document.body.classList.remove('game-active','portrait-ok');missionCard.classList.add('hidden');taskHelpOpen.classList.add('hidden'); result.classList.remove('hidden');
   const plan=evidenceCount('planning'),problem=evidenceCount('problem'),reg=evidenceCount('regulation');
   const planObserved=evidenceObserved('planning'),problemObserved=evidenceObserved('problem'),regObserved=evidenceObserved('regulation'),totalObserved=planObserved+problemObserved+regObserved;
   ui('planScore').textContent=`${planObserved} факта`;ui('problemScore').textContent=`${problemObserved} факта`;ui('regScore').textContent=`${regObserved} факта`;

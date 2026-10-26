@@ -7,11 +7,11 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 
-for (const id of ['taskHelp','taskHelpGlyph','taskHelpText','taskHelpStart','rotateNotice','rotateDismiss']) {
+for (const id of ['taskHelp','taskHelpGlyph','taskHelpDemo','taskHelpText','taskHelpTip','taskHelpStart','taskHelpOpen','rotateNotice','rotateDismiss']) {
   assert(html.includes(`id="${id}"`), `mobile UI contains #${id}`);
 }
-assert(html.includes('styles.css?v=mobile-20261026'), 'mobile stylesheet cache is versioned');
-assert(html.includes('app.js?v=mobile-20261026'), 'mobile script cache is versioned');
+assert(html.includes('styles.css?v=guidance-20261026'), 'guidance stylesheet cache is versioned');
+assert(html.includes('app.js?v=guidance-20261026'), 'guidance script cache is versioned');
 
 for (const task of ['tutorial','planner','circuit','memory','adapt','chase']) {
   assert(js.includes(`${task}:{glyph:`), `short instruction exists for ${task}`);
@@ -24,5 +24,10 @@ assert(css.includes('@media(max-height:520px) and (orientation:landscape)'), 'ph
 assert(css.includes('aspect-ratio:auto'), 'portrait frame does not expand beyond the viewport');
 assert(css.includes('min-height:44px'), 'mobile touch targets include a 44px minimum');
 assert(js.includes('if(S.taskPaused||'), 'game input pauses while the instruction is visible');
+assert(js.includes('let currentTask=null'), 'the active task can be explained again');
+assert(js.includes('announceTask(currentTask,true)'), 'help button repeats the current instruction');
+for (const visual of ['demo-runner','demo-key','demo-pipe','demo-pad','demo-rule','demo-glitch']) {
+  assert(js.includes(visual) && css.includes(visual), `visual demonstration exists: ${visual}`);
+}
 
-console.log('PASS: mobile layouts, touch controls and six short task instructions');
+console.log('PASS: mobile layouts, touch controls and six replayable visual task instructions');

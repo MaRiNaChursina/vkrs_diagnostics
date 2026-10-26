@@ -1,6 +1,21 @@
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
 const ui = id => document.querySelector(`#${id}`);
+
+// Android browsers do not always make 100vh match the part of the screen that
+// is actually visible between their toolbars. Keep the game inside that area.
+function syncVisibleViewport(){
+  const viewport=window.visualViewport;
+  const height=Math.round(viewport?.height||window.innerHeight);
+  const width=Math.round(viewport?.width||window.innerWidth);
+  document.documentElement.style.setProperty('--app-height',`${height}px`);
+  document.documentElement.classList.toggle('short-landscape',width>height&&height<=340);
+}
+syncVisibleViewport();
+window.addEventListener('resize',syncVisibleViewport,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(syncVisibleViewport,120),{passive:true});
+window.visualViewport?.addEventListener('resize',syncVisibleViewport,{passive:true});
+
 const intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
 const plannerPuzzle = ui('plannerPuzzle'), circuitPuzzle = ui('circuitPuzzle'), memoryPuzzle = ui('memoryPuzzle'), result = ui('result'), cutscene = ui('cutscene');
 const logPanel = ui('logPanel'), eventList = ui('events');

@@ -10,8 +10,8 @@ const js = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 for (const id of ['taskHelp','taskHelpGlyph','taskHelpDemo','taskHelpText','taskHelpTip','taskHelpStart','taskHelpOpen','rotateNotice','rotateDismiss']) {
   assert(html.includes(`id="${id}"`), `mobile UI contains #${id}`);
 }
-assert(html.includes('styles.css?v=responsive-20261026'), 'responsive stylesheet cache is versioned');
-assert(html.includes('app.js?v=responsive-20261026'), 'responsive script cache is versioned');
+assert(html.includes('styles.css?v=s20-landscape-20261026'), 'responsive stylesheet cache is versioned');
+assert(html.includes('app.js?v=s20-landscape-20261026'), 'responsive script cache is versioned');
 
 for (const task of ['tutorial','planner','circuit','memory','adapt','chase']) {
   assert(js.includes(`${task}:{glyph:`), `short instruction exists for ${task}`);
@@ -29,8 +29,12 @@ assert(js.includes('announceTask(currentTask,true)'), 'help button repeats the c
 assert(js.includes('warmStoryAssets()'), 'story images are warmed before later cutscenes');
 assert(css.includes('body.game-active:not(.portrait-ok) .rotate-notice{background:rgba(5,8,20,.74)'), 'portrait prompt keeps the scene visible');
 assert(css.includes('object-position:center bottom'), 'mobile actors remain completely inside the scene');
-assert(css.includes('.shell{width:100vw;min-height:100svh;margin:0;padding:0}'), 'phone landscape uses the full screen width');
+assert(css.includes('.shell{width:100vw;min-height:100vh;min-height:var(--app-height);margin:0;padding:0}'), 'phone landscape uses the full visible screen');
 assert(css.includes('.command-pad button,.program-actions button{height:44px;min-height:44px}'), 'landscape puzzle controls remain tappable');
+assert(html.includes('viewport-fit=cover'), 'phone safe areas are enabled');
+assert(js.includes('window.visualViewport'), 'visible Android browser height is measured');
+assert(js.includes("classList.toggle('short-landscape'"), 'very short landscape screens use compact mode');
+assert(css.includes('html.short-landscape .game-frame'), 'compact landscape frame follows the visible viewport');
 for (const visual of ['demo-runner','demo-key','demo-pipe','demo-pad','demo-rule','demo-glitch']) {
   assert(js.includes(visual) && css.includes(visual), `visual demonstration exists: ${visual}`);
 }

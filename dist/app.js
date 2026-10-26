@@ -127,7 +127,7 @@ function showCutscene(id,next){
   cutscene.classList.remove('resolved','shot-0','shot-1','shot-2');cutscene.classList.add('shot-0');
   ui('sceneChapter').textContent=scene.chapter;ui('sceneTitle').textContent=scene.title;ui('sceneText').textContent=scene.text;ui('sceneGlyphs').textContent=scene.glyphs;ui('sceneDialogue').textContent=scene.dialogue;
   ui('sceneStage').innerHTML=actorMarkup(scene)+scene.event;ui('sceneAction').innerHTML=`<b>${scene.icon}</b><span>${scene.action}</span>`;ui('sceneAction').classList.add('hidden');ui('sceneContinue').classList.add('hidden');
-  cutscene.classList.remove('hidden');ui('stageName').textContent=scene.chapter;clearTimeout(storyTimer);storyTimer=setTimeout(()=>{cutscene.classList.replace('shot-0','shot-1');ui('sceneAction').classList.remove('hidden');},1200);track('cutscene_started',{scene:id});
+  cutscene.classList.remove('hidden');ui('stageName').textContent=scene.chapter;clearTimeout(storyTimer);storyTimer=setTimeout(()=>{cutscene.classList.replace('shot-0','shot-1');ui('sceneAction').classList.remove('hidden');},650);track('cutscene_started',{scene:id});
 }
 function resolveCutscene(){
   if(cutscene.classList.contains('resolved'))return;const id=cutscene.dataset.scene,scene=storyScenes[id];cutscene.classList.add('resolved');cutscene.classList.replace('shot-1','shot-2');ui('sceneAction').classList.add('hidden');ui('sceneDialogue').textContent=scene.after;beep(id==='rescue'?880:660,.14);track('cutscene_action',{scene:id,action:scene.action});clearTimeout(storyTimer);storyTimer=setTimeout(()=>ui('sceneContinue').classList.remove('hidden'),900);

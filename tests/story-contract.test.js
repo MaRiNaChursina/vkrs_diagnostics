@@ -19,6 +19,7 @@ for (const scene of ['prologue', 'beacon', 'reactor', 'echo', 'gates', 'storm', 
 assert(js.includes("track('cutscene_started'"), 'cutscenes are represented in the event log');
 assert(js.includes("track('cutscene_action'"), 'player actions inside cutscenes are represented in the event log');
 assert(js.includes("track('cutscene_completed'"), 'cutscene completion is represented in the event log');
+assert(js.includes("},650);track('cutscene_started'"), 'actors and scene action appear without a long blank pause');
 assert(css.includes('.cutscene'), 'cutscene has visual styling');
 for (const asset of ['nova-world-panorama.png', 'nova-character.png', 'bit-character.png']) {
   assert(fs.existsSync(path.join(root, 'assets', asset)), `story asset exists: ${asset}`);

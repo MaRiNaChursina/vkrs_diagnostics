@@ -44,7 +44,7 @@
 .cutscene{--world-x:0%;background:#070912;color:#fff}.cinema{position:absolute;inset:0;overflow:hidden;background:#080a16}.world-panorama{position:absolute;inset:-7%;background-image:url("assets/nova-world-panorama.png");background-repeat:no-repeat;background-size:auto 118%;background-position:var(--world-x) center;filter:saturate(.88) brightness(.62);transform:scale(1.08);transition:background-position 1.8s cubic-bezier(.2,.72,.2,1),filter 1s,transform 1.8s cubic-bezier(.2,.72,.2,1)}
 .world-vignette{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,6,18,.8) 0,rgba(4,6,18,.2) 42%,rgba(4,6,18,.04) 68%,rgba(4,6,18,.48) 100%),linear-gradient(0deg,rgba(4,5,13,.78),transparent 38%,rgba(4,5,13,.34));box-shadow:inset 0 0 90px #03040b;transition:opacity .8s}.cinema-bars::before,.cinema-bars::after{content:"";position:absolute;z-index:11;left:0;right:0;height:4.5%;background:#05060c;transition:transform .8s}.cinema-bars::before{top:0}.cinema-bars::after{bottom:0}
 .cutscene.shot-1 .world-panorama{filter:saturate(1) brightness(.78);transform:scale(1)}.cutscene.resolved .world-panorama{filter:saturate(1.08) brightness(.9);transform:scale(1.025)}.cutscene.resolved .world-vignette{opacity:.72}
-.cutscene .scene-stage{position:absolute;z-index:3;inset:0;height:auto;border-radius:0;overflow:hidden;pointer-events:none}.story-nova,.story-bit{position:absolute;z-index:5;object-fit:contain;filter:drop-shadow(0 18px 20px rgba(0,0,0,.62));transition:left 1.2s cubic-bezier(.2,.8,.2,1),right 1.2s cubic-bezier(.2,.8,.2,1),bottom 1.2s,opacity .8s,transform 1.2s}.story-nova{left:10%;bottom:-17%;width:clamp(138px,24vw,260px);height:72%;transform:translateX(-38px) rotate(-2deg);opacity:0}.story-bit{right:6%;bottom:14%;width:clamp(110px,17vw,190px);height:34%;opacity:0;transform:translateX(30px) scale(.85)}
+.cutscene .scene-stage{position:absolute;z-index:3;inset:0;height:auto;border-radius:0;overflow:hidden;pointer-events:none}.story-nova,.story-bit{position:absolute;z-index:5;object-fit:contain;filter:drop-shadow(0 18px 20px rgba(0,0,0,.62));transition:left 1.2s cubic-bezier(.2,.8,.2,1),right 1.2s cubic-bezier(.2,.8,.2,1),bottom 1.2s,opacity .42s,transform 1.2s}.story-nova{left:10%;bottom:-17%;width:clamp(138px,24vw,260px);height:72%;transform:translateX(-38px) rotate(-2deg);opacity:0}.story-bit{right:6%;bottom:14%;width:clamp(110px,17vw,190px);height:34%;opacity:0;transform:translateX(30px) scale(.85)}
 .cutscene.shot-1 .story-nova,.cutscene.shot-2 .story-nova,.cutscene.resolved .story-nova{opacity:1}.cutscene.shot-1 .story-nova{transform:none}.cutscene.resolved .story-nova{left:18%;transform:rotate(1deg)}.cutscene[data-scene="rescue"] .story-nova{left:9%}.cutscene[data-scene="rescue"] .story-bit{opacity:.42}.cutscene[data-scene="rescue"].resolved .story-nova{left:28%}.cutscene[data-scene="rescue"].resolved .story-bit{right:27%;opacity:1;transform:scale(.82)}.cutscene[data-scene="prologue"] .story-bit,.cutscene[data-scene="beacon"] .story-bit,.cutscene[data-scene="reactor"] .story-bit,.cutscene[data-scene="echo"] .story-bit,.cutscene[data-scene="gates"] .story-bit,.cutscene[data-scene="storm"] .story-bit{display:none}
 .scene-copy{position:absolute;z-index:8;left:6%;top:10%;max-width:490px;transition:transform .65s,opacity .65s}.scene-copy h2{font-size:clamp(32px,5vw,60px);text-shadow:0 3px 24px rgba(0,0,0,.8)}.scene-copy p{color:#e8edff;text-shadow:0 2px 12px #000}.scene-glyphs{font-size:18px;letter-spacing:7px;text-shadow:0 2px 14px #000}.cutscene.shot-1 .scene-copy,.cutscene.shot-2 .scene-copy{transform:translateY(-12px) scale(.92);transform-origin:left top;opacity:.68}
 .scene-dialogue{position:absolute;z-index:9;left:50%;bottom:18%;width:min(560px,78%);padding:13px 18px;border:1px solid rgba(255,255,255,.26);border-radius:18px;color:#f9fbff;background:rgba(7,9,22,.78);box-shadow:0 16px 45px rgba(0,0,0,.42);backdrop-filter:blur(10px);font-size:14px;font-weight:750;text-align:center;transform:translateX(-50%);transition:bottom .5s,background .5s}.cutscene.resolved .scene-dialogue{background:rgba(11,38,50,.82)}
@@ -124,20 +124,21 @@
   .scene-copy h2{font-size:34px;line-height:1}
   .scene-copy p{margin:8px 0 6px;font-size:14px;line-height:1.35}
   .scene-glyphs{font-size:17px;letter-spacing:6px}
-  .story-nova,.cutscene[data-scene="beacon"] .story-nova,.cutscene[data-scene="reactor"] .story-nova,.cutscene[data-scene="gates"] .story-nova,.cutscene[data-scene="storm"] .story-nova,.cutscene[data-scene="rescue"] .story-nova{left:1%;right:auto;bottom:0;width:158px;height:50%;object-position:center bottom}
-  .cutscene[data-scene="echo"] .story-nova{left:auto;right:1%;bottom:0;width:150px;height:50%;object-position:center bottom}
-  .cutscene.resolved .story-nova,.cutscene[data-scene="beacon"].resolved .story-nova,.cutscene[data-scene="reactor"].resolved .story-nova,.cutscene[data-scene="gates"].resolved .story-nova,.cutscene[data-scene="storm"].resolved .story-nova,.cutscene[data-scene="rescue"].resolved .story-nova{left:4%;bottom:0}
-  .cutscene[data-scene="echo"].resolved .story-nova{left:auto;right:4%;bottom:0}
+  .story-nova,.cutscene[data-scene="beacon"] .story-nova,.cutscene[data-scene="reactor"] .story-nova,.cutscene[data-scene="gates"] .story-nova,.cutscene[data-scene="storm"] .story-nova,.cutscene[data-scene="rescue"] .story-nova{left:1%;right:auto;bottom:4px;width:158px;height:50%;object-position:center bottom}
+  .cutscene[data-scene="echo"] .story-nova{left:auto;right:1%;bottom:4px;width:150px;height:50%;object-position:center bottom}
+  .cutscene.resolved .story-nova,.cutscene[data-scene="beacon"].resolved .story-nova,.cutscene[data-scene="reactor"].resolved .story-nova,.cutscene[data-scene="gates"].resolved .story-nova,.cutscene[data-scene="storm"].resolved .story-nova,.cutscene[data-scene="rescue"].resolved .story-nova{left:4%;bottom:4px}
+  .cutscene[data-scene="echo"].resolved .story-nova{left:auto;right:4%;bottom:4px}
   .story-bit{right:3%;bottom:5%;width:105px;height:23%;object-position:center bottom}
-  .scene-dialogue{left:auto;right:4%;bottom:27%;width:62%;padding:11px 13px;font-size:14px;line-height:1.25;transform:none}
-  .cutscene[data-scene="echo"] .scene-dialogue{left:4%;right:auto}
-  .cutscene[data-scene="rescue"] .scene-dialogue{left:50%;right:auto;top:43%;bottom:auto;width:84%;transform:translateX(-50%)}
+  .scene-dialogue{left:auto;right:3%;bottom:27%;width:57%;padding:11px 13px;font-size:14px;line-height:1.25;transform:none}
+  .cutscene[data-scene="echo"] .scene-dialogue{left:3%;right:auto}
+  .cutscene[data-scene="rescue"] .scene-dialogue{left:50%;right:auto;top:39%;bottom:auto;width:84%;transform:translateX(-50%)}
   .scene-action{bottom:4%;min-width:178px;min-height:48px;padding:10px 15px;font-size:14px}
   .scene-continue{right:4%;bottom:4%;min-height:46px;padding:10px 15px;font-size:14px}
   .scene-skip{right:4%;top:5%;min-height:40px;padding:8px 10px;border-radius:12px;background:rgba(5,8,20,.45);font-size:12px;font-weight:800}
   .hud-center strong{font-size:11px}
   .log-toggle{font-size:11px}
   .mission-card span{font-size:13px}
+  .command-pad button,.program-actions button{height:44px;min-height:44px}
   .task-help-card p{margin:10px 0 5px;font-size:16px}
   .task-help-card>small{font-size:13px}
   .result-story{font-size:13px;line-height:1.45}
@@ -150,5 +151,37 @@
   body.game-active:not(.portrait-ok) .rotate-notice{background:rgba(5,8,20,.74);backdrop-filter:blur(4px)}
 }
 @media(max-height:520px) and (orientation:landscape){
-  .scene-copy h2{font-size:30px}.scene-copy p{font-size:13px}.scene-dialogue{font-size:13px}.scene-action,.scene-continue{font-size:13px}.scene-skip{font-size:11px}.result-story{font-size:11px}.report-details span{font-size:10px}
+  html,body{width:100%;height:100%;overflow:hidden}
+  .shell{width:100vw;min-height:100svh;margin:0;padding:0}
+  .hud-top{width:100%;height:44px;border-width:0 0 1px;border-radius:0}
+  .game-frame{width:100vw;height:calc(100svh - 44px);min-height:0;border:0;border-radius:0}
+  .game-frame>canvas{left:0;top:0;width:100%;height:100%;object-fit:fill;transform:none}
+  .overlay{padding:6px}
+  .cutscene .world-panorama{inset:0;background-size:cover;filter:saturate(1.05) brightness(.92)}
+  .cutscene.shot-1 .world-panorama{filter:saturate(1.08) brightness(1)}
+  .cutscene .world-vignette{background:linear-gradient(90deg,rgba(4,7,18,.48),rgba(4,7,18,.03) 60%,rgba(4,7,18,.2)),linear-gradient(0deg,rgba(4,6,16,.38),transparent 45%);box-shadow:inset 0 0 35px rgba(2,4,12,.55)}
+  .scene-copy{left:3%;top:5%;max-width:54%;transform-origin:left top}
+  .scene-chapter{margin-bottom:5px;padding:5px 8px;font-size:10px}
+  .scene-copy h2{font-size:clamp(27px,8.2vh,32px);line-height:1}
+  .scene-copy p{margin:6px 0 4px;font-size:13px;line-height:1.25}
+  .scene-glyphs{font-size:15px;letter-spacing:5px}
+  .story-nova,.cutscene[data-scene="beacon"] .story-nova,.cutscene[data-scene="reactor"] .story-nova,.cutscene[data-scene="gates"] .story-nova,.cutscene[data-scene="storm"] .story-nova,.cutscene[data-scene="rescue"] .story-nova{left:2%;right:auto;bottom:4px;width:clamp(118px,18vw,154px);height:58%;object-position:center bottom}
+  .cutscene[data-scene="echo"] .story-nova{left:auto;right:2%;bottom:4px;width:clamp(112px,17vw,146px);height:58%;object-position:center bottom}
+  .cutscene.resolved .story-nova,.cutscene[data-scene="beacon"].resolved .story-nova,.cutscene[data-scene="reactor"].resolved .story-nova,.cutscene[data-scene="gates"].resolved .story-nova,.cutscene[data-scene="storm"].resolved .story-nova,.cutscene[data-scene="rescue"].resolved .story-nova{left:4%;right:auto;bottom:4px}
+  .cutscene[data-scene="echo"].resolved .story-nova{left:auto;right:4%;bottom:4px}
+  .story-bit{right:3%;bottom:3%;width:100px;height:31%;object-position:center bottom}
+  .scene-dialogue{left:auto;right:3%;bottom:22%;width:48%;padding:9px 12px;font-size:13px;line-height:1.2;transform:none}
+  .cutscene[data-scene="echo"] .scene-dialogue{left:3%;right:auto}
+  .cutscene[data-scene="rescue"] .scene-dialogue{left:50%;right:auto;top:43%;bottom:auto;width:54%;transform:translateX(-50%)}
+  .scene-action{bottom:3%;min-width:180px;min-height:48px;padding:9px 15px;font-size:13px}
+  .scene-continue{right:3%;bottom:3%;min-height:46px;padding:9px 14px;font-size:13px}
+  .scene-skip{right:3%;top:3%;min-height:40px;padding:7px 10px;border-radius:11px;background:rgba(5,8,20,.48);font-size:11px;font-weight:800}
+  .scene-timeline{left:3%;bottom:4%}
+  .intro .kicker{font-size:9px}.intro-story{font-size:11px}.age-switch button{min-height:44px}.play{width:58px;height:48px}.task-help-card>button{min-height:44px}
+  .puzzle-head{left:10px;right:10px;top:7px}.planner-layout{margin-top:8px}.command-pad button,.program-actions button{height:44px;min-height:44px}.controls button{width:52px;height:44px}
+  .controls{display:none;position:fixed;z-index:35;left:max(10px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));margin:0;padding:6px;border:1px solid rgba(255,255,255,.15);border-radius:17px;background:rgba(7,10,24,.78);backdrop-filter:blur(8px)}
+  body[data-stage="tutorial"] .controls,body[data-stage="chase"] .controls,body[data-stage="adapt"] .controls{display:block}
+  body[data-stage="adapt"] .controls div button:first-child,body[data-stage="adapt"] .controls div button:last-child{visibility:hidden}
+  .scene-drone{bottom:34%}.energy-pulse{bottom:27%;transform:scale(.82)}.tower-flare{top:22%}.story-gate{top:27%;bottom:18%}.crystal-echo{bottom:20%}.storm-shield{bottom:5%;transform:scale(.72)}
+  .result-story{font-size:11px}.report-details span{font-size:10px}
 }

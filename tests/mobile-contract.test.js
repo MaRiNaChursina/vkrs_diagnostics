@@ -10,6 +10,8 @@ const js = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 for (const id of ['taskHelp','taskHelpGlyph','taskHelpText','taskHelpStart','rotateNotice','rotateDismiss']) {
   assert(html.includes(`id="${id}"`), `mobile UI contains #${id}`);
 }
+assert(html.includes('styles.css?v=mobile-20261026'), 'mobile stylesheet cache is versioned');
+assert(html.includes('app.js?v=mobile-20261026'), 'mobile script cache is versioned');
 
 for (const task of ['tutorial','planner','circuit','memory','adapt','chase']) {
   assert(js.includes(`${task}:{glyph:`), `short instruction exists for ${task}`);

@@ -112,3 +112,43 @@
 @media(max-width:760px) and (orientation:portrait){body.game-active:not(.portrait-ok) .rotate-notice{position:absolute;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:rgba(5,8,20,.94);text-align:center}.rotate-notice>div{display:grid;place-items:center;max-width:280px}.rotate-notice b{display:grid;place-items:center;width:76px;height:76px;margin-bottom:14px;border:1px solid rgba(86,231,255,.35);border-radius:25px;color:var(--cyan);background:rgba(86,231,255,.08);font-size:42px}.rotate-notice strong{font-size:22px}.rotate-notice span{margin:7px 0 18px;color:var(--muted);font-size:13px}.rotate-notice button{min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:13px;color:#dce7ff;background:rgba(255,255,255,.06)}}
 
 @media(max-height:520px) and (orientation:landscape){body{overflow:hidden}.shell{width:min(100vw,calc((100svh - 44px) * 1.7778));min-height:100svh}.hud-top{height:44px}.game-frame{height:calc(100svh - 44px);min-height:0;aspect-ratio:16/9}.game-frame>canvas{top:0;width:100%;height:100%;transform:none}.intro{overflow:hidden}.hero-lockup{height:70px;transform:scale(.52);margin:-12px 0}.intro .kicker{margin:0}.intro h1{margin-bottom:3px;font-size:31px}.intro-story{margin-bottom:4px;font-size:10px}.age-switch{margin-bottom:4px}.age-switch button{min-height:34px;padding:4px 9px}.age-brief{min-height:23px;margin:0 0 4px;padding:3px 8px}.play{width:55px;height:43px;border-radius:15px;font-size:21px}.intro>small{margin-top:3px}.mobile-note{display:none!important}.planner-layout{grid-template-columns:auto 205px;gap:12px;margin-top:12px}.plan-grid{grid-template-columns:repeat(5,43px);padding:6px}.plan-cell{width:43px;height:43px}.programmer{width:205px;gap:6px}.program-queue{min-height:42px}.command-pad button,.program-actions button{height:35px}.plan-attempts{font-size:14px}.circuit-grid{grid-template-columns:repeat(3,58px);padding:7px}.circuit-grid button{width:58px;height:58px;font-size:37px}.pads{grid-template-columns:repeat(2,76px);gap:8px;margin:10px}.pads button{width:76px;height:76px;border-radius:22px}.round-play{width:50px;height:44px}.scene-copy{top:7%}.scene-copy h2{font-size:27px}.scene-copy p{font-size:11px}.scene-dialogue{bottom:24%}.task-help-card{padding:15px}.task-help-card strong{font-size:24px}.task-help-card p{margin:7px 0 10px;font-size:13px}.task-help-card button{width:50px;height:42px}.result{padding-top:8px}.result .kicker,.rescued{display:none}.result h2{margin:0 0 4px;font-size:25px}.result-grid div{padding:6px}.result-story{margin:5px;font-size:10px}.report-details{grid-template-columns:repeat(3,1fr);margin-bottom:5px}.report-details article{padding:6px}.controls button{width:46px;height:40px}}
+
+/* Mobile cinema: keep the scene visible, the actors complete and all text readable. */
+@media(max-width:760px){
+  .cutscene .world-panorama{background-color:#192744;filter:saturate(1.05) brightness(.9)}
+  .cutscene.shot-1 .world-panorama{filter:saturate(1.08) brightness(.98)}
+  .cutscene.resolved .world-panorama{filter:saturate(1.1) brightness(1)}
+  .cutscene .world-vignette{background:linear-gradient(90deg,rgba(4,7,18,.48),rgba(4,7,18,.04) 58%,rgba(4,7,18,.22)),linear-gradient(0deg,rgba(4,6,16,.4),transparent 42%);box-shadow:inset 0 0 40px rgba(2,4,12,.65)}
+  .scene-copy{left:5%;top:7%;max-width:88%}
+  .scene-chapter{padding:6px 9px;font-size:11px}
+  .scene-copy h2{font-size:34px;line-height:1}
+  .scene-copy p{margin:8px 0 6px;font-size:14px;line-height:1.35}
+  .scene-glyphs{font-size:17px;letter-spacing:6px}
+  .story-nova,.cutscene[data-scene="beacon"] .story-nova,.cutscene[data-scene="reactor"] .story-nova,.cutscene[data-scene="gates"] .story-nova,.cutscene[data-scene="storm"] .story-nova,.cutscene[data-scene="rescue"] .story-nova{left:1%;right:auto;bottom:0;width:158px;height:50%;object-position:center bottom}
+  .cutscene[data-scene="echo"] .story-nova{left:auto;right:1%;bottom:0;width:150px;height:50%;object-position:center bottom}
+  .cutscene.resolved .story-nova,.cutscene[data-scene="beacon"].resolved .story-nova,.cutscene[data-scene="reactor"].resolved .story-nova,.cutscene[data-scene="gates"].resolved .story-nova,.cutscene[data-scene="storm"].resolved .story-nova,.cutscene[data-scene="rescue"].resolved .story-nova{left:4%;bottom:0}
+  .cutscene[data-scene="echo"].resolved .story-nova{left:auto;right:4%;bottom:0}
+  .story-bit{right:3%;bottom:5%;width:105px;height:23%;object-position:center bottom}
+  .scene-dialogue{left:auto;right:4%;bottom:27%;width:62%;padding:11px 13px;font-size:14px;line-height:1.25;transform:none}
+  .cutscene[data-scene="echo"] .scene-dialogue{left:4%;right:auto}
+  .cutscene[data-scene="rescue"] .scene-dialogue{left:50%;right:auto;top:43%;bottom:auto;width:84%;transform:translateX(-50%)}
+  .scene-action{bottom:4%;min-width:178px;min-height:48px;padding:10px 15px;font-size:14px}
+  .scene-continue{right:4%;bottom:4%;min-height:46px;padding:10px 15px;font-size:14px}
+  .scene-skip{right:4%;top:5%;min-height:40px;padding:8px 10px;border-radius:12px;background:rgba(5,8,20,.45);font-size:12px;font-weight:800}
+  .hud-center strong{font-size:11px}
+  .log-toggle{font-size:11px}
+  .mission-card span{font-size:13px}
+  .task-help-card p{margin:10px 0 5px;font-size:16px}
+  .task-help-card>small{font-size:13px}
+  .result-story{font-size:13px;line-height:1.45}
+  .result-grid span{font-size:11px}
+  .report-details b{font-size:12px}
+  .report-details span{font-size:11px;line-height:1.45}
+  .result>small{font-size:11px}
+}
+@media(max-width:760px) and (orientation:portrait){
+  body.game-active:not(.portrait-ok) .rotate-notice{background:rgba(5,8,20,.74);backdrop-filter:blur(4px)}
+}
+@media(max-height:520px) and (orientation:landscape){
+  .scene-copy h2{font-size:30px}.scene-copy p{font-size:13px}.scene-dialogue{font-size:13px}.scene-action,.scene-continue{font-size:13px}.scene-skip{font-size:11px}.result-story{font-size:11px}.report-details span{font-size:10px}
+}

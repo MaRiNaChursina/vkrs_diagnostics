@@ -100,7 +100,18 @@ function toast(text,ms=850){ toastEl.textContent=text; toastEl.classList.add('sh
 function stageUI(n,name,icon,text){ ui('stageName').textContent=name; ui('stageDots').textContent='●'.repeat(n)+'○'.repeat(6-n); missionCard.classList.remove('hidden'); ui('missionIcon').textContent=icon; ui('missionText').textContent=text; }
 function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
 
-const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" alt=""><img class="story-bit" src="assets/bit-character.webp" alt="">`;
+const storyAssetUrls=[
+  'assets/scene-forest-v2.webp','assets/scene-ruins-v2.webp','assets/scene-reactor-v2.webp','assets/scene-crystals-v2.webp','assets/scene-gates-v2.webp','assets/scene-storm-v2.webp',
+  'assets/nova-character.webp','assets/nova-running-v2.webp','assets/nova-powering-v2.webp','assets/nova-listening-v2.webp','assets/nova-reunion-v2.webp','assets/bit-character.webp'
+];
+const storyPreloads=[];
+let storyAssetsWarmed=false;
+function warmStoryAssets(){
+  if(storyAssetsWarmed)return;storyAssetsWarmed=true;
+  storyAssetUrls.forEach(src=>{const image=new Image();image.decoding='async';image.src=src;storyPreloads.push(image);});
+}
+if('requestIdleCallback' in window)requestIdleCallback(warmStoryAssets,{timeout:1800});else setTimeout(warmStoryAssets,400);
+const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" decoding="async" alt=""><img class="story-bit" src="assets/bit-character.webp" decoding="async" alt="">`;
 const storyScenes={
   prologue:{chapter:'ПРОЛОГ',title:'Сигнал погас',text:'Компас дрогнул в тёмном лесу.',glyphs:'🧭  ·  ✦  ·  ?',pose:'assets/nova-character.webp',action:'Поймать сигнал',icon:'✦',dialogue:'Коснись искры — пусть компас запомнит направление.',after:'Луч ведёт через руины. Бит ещё на связи!',event:'<div class="story-prop signal-spark">✦<i></i><i></i></div><div class="story-prop compass-ray"></div>'},
   beacon:{chapter:'ГЛАВА I',title:'Дорога над пропастью',text:'Старая платформа ещё может летать.',glyphs:'◉  ·  ⚡  ·  ⛰',pose:'assets/nova-running-v2.webp',action:'Запустить дрон',icon:'▶',dialogue:'Разбуди платформу одним импульсом.',after:'Дрон поднялся и показал путь к башне.',event:'<div class="story-prop scene-drone">◉<i></i></div><div class="story-prop flight-trail"></div>'},
@@ -132,7 +143,7 @@ function beep(freq=440,d=.08){ try{ audio ||= new AudioContext(); const o=audio.
 function updateAgeIntro(){const profile=ageProfile();ui('ageBrief').innerHTML=`<b>${profile.label}</b><span>${profile.brief}</span>`;}
 document.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{ document.querySelectorAll('[data-age]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); S.age=b.dataset.age; updateAgeIntro(); });
 updateAgeIntro();
-ui('play').onclick=()=>{ document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
+ui('play').onclick=()=>{ warmStoryAssets();document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
 ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='МИССИЯ'; ui('stageDots').textContent=''; setStage('intro');document.body.classList.remove('game-active','portrait-ok'); };
 ui('rotateDismiss').onclick=()=>document.body.classList.add('portrait-ok');
 ui('logToggle').onclick=()=>logPanel.classList.toggle('open'); ui('logClose').onclick=()=>logPanel.classList.remove('open'); ui('openLogs').onclick=()=>logPanel.classList.add('open');

@@ -10,8 +10,8 @@ const js = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 for (const id of ['taskHelp','taskHelpGlyph','taskHelpDemo','taskHelpText','taskHelpTip','taskHelpStart','taskHelpOpen','rotateNotice','rotateDismiss']) {
   assert(html.includes(`id="${id}"`), `mobile UI contains #${id}`);
 }
-assert(html.includes('styles.css?v=guidance-20261026'), 'guidance stylesheet cache is versioned');
-assert(html.includes('app.js?v=guidance-20261026'), 'guidance script cache is versioned');
+assert(html.includes('styles.css?v=cinema-20261026'), 'cinema stylesheet cache is versioned');
+assert(html.includes('app.js?v=cinema-20261026'), 'cinema script cache is versioned');
 
 for (const task of ['tutorial','planner','circuit','memory','adapt','chase']) {
   assert(js.includes(`${task}:{glyph:`), `short instruction exists for ${task}`);
@@ -26,6 +26,9 @@ assert(css.includes('min-height:44px'), 'mobile touch targets include a 44px min
 assert(js.includes('if(S.taskPaused||'), 'game input pauses while the instruction is visible');
 assert(js.includes('let currentTask=null'), 'the active task can be explained again');
 assert(js.includes('announceTask(currentTask,true)'), 'help button repeats the current instruction');
+assert(js.includes('warmStoryAssets()'), 'story images are warmed before later cutscenes');
+assert(css.includes('body.game-active:not(.portrait-ok) .rotate-notice{background:rgba(5,8,20,.74)'), 'portrait prompt keeps the scene visible');
+assert(css.includes('object-position:center bottom'), 'mobile actors remain completely inside the scene');
 for (const visual of ['demo-runner','demo-key','demo-pipe','demo-pad','demo-rule','demo-glitch']) {
   assert(js.includes(visual) && css.includes(visual), `visual demonstration exists: ${visual}`);
 }

@@ -7,7 +7,7 @@
   <meta name="description" content="Сюжетное игровое приключение с незаметным сбором поведенческих показателей">
   <link rel="preload" as="image" href="assets/scene-forest-v2.webp" type="image/webp">
   <link rel="preload" as="image" href="assets/nova-character.webp" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=s20-landscape-20261026">
+  <link rel="stylesheet" href="styles.css?v=mechanics-preview-20261027f">
 </head>
 <body data-stage="intro">
   <main class="shell">
@@ -87,13 +87,14 @@
       <div class="puzzle overlay hidden" id="memoryPuzzle">
         <div class="puzzle-head"><b>4/6</b><span id="memoryHint">👁️</span></div>
         <div id="pads" class="pads"><button data-pad="0" aria-label="Бирюзовый сигнал"></button><button data-pad="1" aria-label="Розовый сигнал"></button><button data-pad="2" aria-label="Жёлтый сигнал"></button><button data-pad="3" aria-label="Фиолетовый сигнал"></button></div>
+        <div id="memoryFeedback" class="memory-feedback hidden" role="status" aria-live="assertive"><div><b>Неправильно</b><span id="memoryFeedbackText">Пауза. Повтор через 3…</span></div></div>
         <button id="memoryStart" class="round-play" type="button">▶</button><div id="roundMarks" class="round-marks">○ ○</div>
       </div>
       <div class="result overlay hidden" id="result">
         <div class="rescued"><span>🧒</span><div class="bit-face small">•ᴗ•</div><i>♥</i></div>
         <p class="kicker">МИССИЯ ЗАВЕРШЕНА</p><h2>Бит найден!</h2>
         <div class="report-status"><b>ПРЕДВАРИТЕЛЬНЫЙ ПРОФИЛЬ</b><span>поведение в этой игре, не диагноз</span></div>
-        <div class="result-grid"><div><b id="planScore">—</b><span>Планирование</span></div><div><b id="problemScore">—</b><span>Решение проблем</span></div><div><b id="regScore">—</b><span>Контроль действий</span></div></div>
+        <div class="result-grid"><div><b id="planScore">—</b><span>Планирование</span></div><div><b id="problemScore">—</b><span>Решение проблем</span></div><div><b id="regScore">—</b><span>Саморегуляция</span></div></div>
         <p id="resultStory" class="result-story"></p>
         <div id="reportDetails" class="report-details"></div>
         <div class="result-actions"><button id="openLogs">Цифровой след</button><button id="again">↻</button></div>
@@ -101,9 +102,9 @@
       </div>
     </section>
 
-    <div class="controls" aria-label="Управление"><button data-move="up" aria-label="Вверх">▲</button><div><button data-move="left" aria-label="Влево">◀</button><button data-move="down" aria-label="Вниз">▼</button><button data-move="right" aria-label="Вправо">▶</button></div></div>
+    <div class="controls" id="touchControls" aria-label="Управление"><span id="controlsHint" class="controls-hint">Двигай героя</span><button data-move="up" aria-label="Вверх">▲</button><div><button data-move="left" aria-label="Влево">◀</button><button data-move="down" aria-label="Вниз">▼</button><button data-move="right" aria-label="Вправо">▶</button></div></div>
   </main>
-  <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/3</b></span><span>Проблемы<b id="evProblem">0/3</b></span><span>Контроль<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование: полный план до запуска, длина программы, улучшение после обратной связи</span><span>Решение проблем: продуктивные проверки, повторы, перенос во 2-й раунд</span><span>Контроль действий: работа под нагрузкой, смена правила, возврат к цели</span></div><ol id="events"></ol></aside>
-  <script src="app.js?v=s20-landscape-20261026"></script>
+  <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/2</b></span><span>Проблемы<b id="evProblem">0/4</b></span><span>Саморегуляция<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование, основные данные: полный план и эффективность двух маршрутов дрона</span><span>Решение проблем, перекрёстные данные: продуктивный поиск и перенос в двух цепях, возвраты к прежнему состоянию, изменение программы дрона после ошибки</span><span>Саморегуляция: контроль после ошибки памяти, смена правила, возврат к цели после столкновения</span><small>Пороги — рабочие настройки MVP, не возрастные нормы</small></div><ol id="events"></ol></aside>
+  <script src="app.js?v=mechanics-preview-20261027f"></script>
 </body>
 </html>

@@ -231,3 +231,26 @@ html.short-landscape .task-help-card strong{font-size:21px}
 html.short-landscape .task-help-card p{margin:4px 0;font-size:12px}
 html.short-landscape .task-help-card>small{font-size:10px}
 html.short-landscape .task-help-card button{width:48px;height:44px}
+
+.controls-hint{display:block;max-width:150px;margin:0 auto 6px;color:#dce7ff;font-size:10px;font-weight:900;line-height:1.25;text-align:center}
+
+/* Keep the maze and its hero separate from the touch controls. */
+@media(max-width:760px){.controls{left:auto;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom))}}
+@media(max-height:520px) and (orientation:landscape){
+  body[data-stage="tutorial"] .game-frame>canvas,body[data-stage="chase"] .game-frame>canvas,body[data-stage="adapt"] .game-frame>canvas{left:max(0px,env(safe-area-inset-left));top:0;width:auto;height:100%;max-width:calc(100% - 205px);object-fit:contain;transform:none}
+  body[data-stage="tutorial"] .controls,body[data-stage="chase"] .controls,body[data-stage="adapt"] .controls{left:auto;right:max(10px,env(safe-area-inset-right));top:50%;bottom:auto;width:180px;transform:translateY(-43%)}
+  .controls-hint{font-size:11px}
+  body[data-stage="adapt"] .controls div button:first-child,body[data-stage="adapt"] .controls div button:last-child{display:none}
+  body[data-stage="adapt"] .controls>button,body[data-stage="adapt"] .controls div{margin:4px auto}
+}
+
+/* Clear route feedback: only the source-to-target chain remains lit. */
+.circuit-grid button{position:relative}.circuit-grid button>span{position:relative;z-index:2;pointer-events:none}.circuit-grid.solved button:not(.solved-path){border-color:rgba(151,170,255,.05);color:#252c40;background:#080c18;box-shadow:none;opacity:.1}.circuit-grid button.solved-path{border-color:#fff;color:#fff;background:rgba(86,231,255,.28);box-shadow:inset 0 0 28px rgba(86,231,255,.36),0 0 20px rgba(86,231,255,.34);animation:flowTile 1.5s calc(var(--flow-order)*.16s) infinite}.circuit-grid button.solved-path::after{content:"✦";position:absolute;z-index:3;color:#fff;font-size:17px;filter:drop-shadow(0 0 9px #fff);opacity:0;animation:pathSpark 1.5s calc(var(--flow-order)*.16s) infinite}.circuit-grid.solved{box-shadow:0 0 30px rgba(86,231,255,.18)}.power-line.route-complete .power-source,.power-line.route-complete .power-target{animation:endpointPulse .75s infinite alternate}
+@keyframes flowTile{0%,100%{filter:brightness(.88)}45%,70%{filter:brightness(1.5)}}@keyframes pathSpark{0%,25%,100%{opacity:0;transform:scale(.4)}45%,68%{opacity:1;transform:scale(1.12)}}@keyframes endpointPulse{to{filter:brightness(1.45);transform:scale(1.07)}}
+
+/* Memory input is locked while the sequence or error feedback is visible. */
+.pads.input-locked button,.pads button:disabled{cursor:not-allowed;filter:saturate(.38);opacity:.34}.pads.input-locked button.flash,.pads button:disabled.flash{filter:brightness(1.55);opacity:1}.memory-feedback{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:18px;background:rgba(5,8,20,.62);backdrop-filter:blur(5px)}.memory-feedback>div{display:grid;gap:7px;width:min(370px,88%);padding:24px;border:1px solid rgba(255,79,154,.5);border-radius:23px;background:linear-gradient(145deg,#22132c,#0d1329);box-shadow:0 24px 70px rgba(0,0,0,.5);text-align:center}.memory-feedback b{font-size:25px}.memory-feedback span{color:#c9d2eb;font-size:13px;line-height:1.4}
+
+/* Keep the replay-help button away from the mobile movement controls. */
+@media(max-width:900px),(pointer:coarse){body[data-stage="tutorial"] .task-help-open,body[data-stage="chase"] .task-help-open,body[data-stage="adapt"] .task-help-open{top:auto;right:calc(max(8px,env(safe-area-inset-right)) + 150px);bottom:max(8px,env(safe-area-inset-bottom))}}
+@media(max-height:520px) and (orientation:landscape){body[data-stage="tutorial"] .task-help-open,body[data-stage="chase"] .task-help-open,body[data-stage="adapt"] .task-help-open{right:calc(max(10px,env(safe-area-inset-right)) + 190px)}}

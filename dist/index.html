@@ -7,9 +7,9 @@
   <meta name="description" content="Сюжетное игровое приключение с незаметным сбором поведенческих показателей">
   <link rel="preload" as="image" href="assets/scene-forest-v2.webp" type="image/webp">
   <link rel="preload" as="image" href="assets/nova-character.webp" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=mechanics-preview-20261027f">
+  <link rel="stylesheet" href="styles.css?v=questionnaire-20261031a">
 </head>
-<body data-stage="intro">
+<body data-stage="questionnaire">
   <main class="shell">
     <header class="hud-top">
       <div class="logo"><b>N</b><span>НОВА // ПУТЬ К БИТУ<small>приключение «Точка интереса»</small></span></div>
@@ -19,7 +19,34 @@
 
     <section class="game-frame" id="gameFrame">
       <canvas id="game" width="960" height="540" aria-label="Игровое поле"></canvas>
-      <div class="intro overlay" id="intro">
+      <div class="questionnaire overlay" id="questionnaire" aria-live="polite">
+        <div class="survey-card">
+          <div class="survey-head">
+            <span class="survey-kicker">ТОЧКА ИНТЕРЕСА</span>
+            <span id="surveyProgress" class="survey-progress">СТАРТ</span>
+          </div>
+          <div id="surveyWelcome" class="survey-welcome">
+            <div class="survey-orbit" aria-hidden="true"><span>🧭</span><i>🎮</i><i>🎨</i><i>🔬</i><i>🤖</i></div>
+            <h1>Что тебе интересно?</h1>
+            <p>Выбирай то, что тебе действительно нравится. Не обязательно уже уметь — достаточно хотеть попробовать.</p>
+            <small>Здесь нет правильных и неправильных ответов</small>
+            <button id="surveyStart" class="survey-start" type="button">Начать <span>→</span></button>
+          </div>
+          <div id="surveyQuestion" class="survey-question hidden">
+            <div class="survey-title-row"><span id="surveyIcon">✨</span><div><h2 id="surveyTitle"></h2><p id="surveyRule"></p></div></div>
+            <div id="surveyOptions" class="survey-options" role="group"></div>
+            <div id="surveyMessage" class="survey-message" role="status"></div>
+            <div class="survey-actions"><button id="surveyBack" type="button">← Назад</button><button id="surveyNext" type="button" disabled>Дальше →</button></div>
+          </div>
+          <div id="surveyDone" class="survey-done hidden">
+            <div class="survey-done-icon" aria-hidden="true">✓</div>
+            <h2>Маршрут настроен</h2>
+            <p>Теперь выбери возраст и отправляйся искать Бита.</p>
+            <button id="surveyToGame" class="survey-start" type="button">К игре <span>→</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="intro overlay hidden" id="intro">
         <div class="hero-lockup"><div class="traveler-portrait"><span>🧒</span></div><div class="signal-rings"><i></i><i></i><div class="bit-face">•ᴗ•</div></div></div>
         <p class="kicker">ЗА ШТОРМОМ ТИШИНЫ</p><h1>Путь к Биту</h1>
         <p class="intro-story">Его сигнал погас. Но искры ещё ведут вперёд.</p>
@@ -96,6 +123,7 @@
         <div class="report-status"><b>ПРЕДВАРИТЕЛЬНЫЙ ПРОФИЛЬ</b><span>поведение в этой игре, не диагноз</span></div>
         <div class="result-grid"><div><b id="planScore">—</b><span>Планирование</span></div><div><b id="problemScore">—</b><span>Решение проблем</span></div><div><b id="regScore">—</b><span>Саморегуляция</span></div></div>
         <p id="resultStory" class="result-story"></p>
+        <div id="surveySummary" class="survey-summary"></div>
         <div id="reportDetails" class="report-details"></div>
         <div class="result-actions"><button id="openLogs">Цифровой след</button><button id="again">↻</button></div>
         <small>Демонстрационные показатели, не психологический диагноз</small>
@@ -104,7 +132,7 @@
 
     <div class="controls" id="touchControls" aria-label="Управление"><span id="controlsHint" class="controls-hint">Двигай героя</span><button data-move="up" aria-label="Вверх">▲</button><div><button data-move="left" aria-label="Влево">◀</button><button data-move="down" aria-label="Вниз">▼</button><button data-move="right" aria-label="Вправо">▶</button></div></div>
   </main>
-  <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/2</b></span><span>Проблемы<b id="evProblem">0/4</b></span><span>Саморегуляция<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование, основные данные: полный план и эффективность двух маршрутов дрона</span><span>Решение проблем, перекрёстные данные: продуктивный поиск и перенос в двух цепях, возвраты к прежнему состоянию, изменение программы дрона после ошибки</span><span>Саморегуляция: контроль после ошибки памяти, смена правила, возврат к цели после столкновения</span><small>Пороги — рабочие настройки MVP, не возрастные нормы</small></div><ol id="events"></ol></aside>
-  <script src="app.js?v=mechanics-preview-20261027f"></script>
+  <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/2</b></span><span>Проблемы<b id="evProblem">0/4</b></span><span>Саморегуляция<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование, основные данные: полный план и эффективность двух маршрутов дрона</span><span>Решение проблем, перекрёстные данные: продуктивный поиск и перенос в двух цепях, возвраты к прежнему состоянию, изменение программы дрона после ошибки</span><span>Саморегуляция: контроль после ошибки памяти, смена правила, возврат к цели после столкновения</span><small>Показаны наблюдаемые действия в игре, а не возрастные нормы</small></div><ol id="events"></ol></aside>
+  <script src="app.js?v=questionnaire-20261031a"></script>
 </body>
 </html>

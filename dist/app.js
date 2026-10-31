@@ -16,14 +16,15 @@ window.addEventListener('resize',syncVisibleViewport,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(syncVisibleViewport,120),{passive:true});
 window.visualViewport?.addEventListener('resize',syncVisibleViewport,{passive:true});
 
-const intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
+const questionnaire = ui('questionnaire'), intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
 const plannerPuzzle = ui('plannerPuzzle'), circuitPuzzle = ui('circuitPuzzle'), memoryPuzzle = ui('memoryPuzzle'), result = ui('result'), cutscene = ui('cutscene');
 const logPanel = ui('logPanel'), eventList = ui('events');
 const taskHelp = ui('taskHelp');
 const taskHelpOpen = ui('taskHelpOpen');
 
 const S = {
-  age: '10-12', stage: 'intro', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
+  age: '10-12', stage: 'questionnaire', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
+  questionnaire: { completed: false, answers: {} },
   observations: { planning: {}, problem: {}, regulation: {} },
   player: { x: 1, y: 1 }, map: [], collected: 0, moves: 0,
   circuitRotations: 0, memoryErrors: 0, memoryRound: 0,
@@ -36,7 +37,33 @@ const observationNames = {
   problem:{productiveSearch:'продуктивный поиск в цепи',lowRepetition:'без возврата к прежнему состоянию',transfer:'перенос способа во второй цепи',adaptiveRevision:'изменение программы дрона после ошибки'},
   regulation:{loadControl:'контроль под нагрузкой',ruleSwitch:'смена правила',goalReturn:'возврат к цели'}
 };
-const MVP_THRESHOLDS={firstRunRoutes:1,planEfficiency:.8,productiveSearch:.22,nonproductiveRepeat:.55};
+const PILOT_CRITERIA={firstRunRoutes:1,planEfficiency:.8,productiveSearch:.22,nonproductiveRepeat:.55};
+const SURVEY_QUESTIONS=[
+  {id:'q1',icon:'✨',title:'Чем тебе интереснее всего заниматься?',rule:'Выбери до трёх вариантов',max:3,exclusive:[10],options:[
+    ['🧩','Конструировать и собирать модели'],['🎨','Рисовать, придумывать дизайн и украшать'],['🧠','Решать загадки, головоломки и задачки'],['🔬','Проводить опыты и узнавать, как всё устроено'],['🎮','Создавать игры, работать с компьютером или программировать'],['📖','Придумывать истории, персонажей и сюжеты'],['🛠️','Мастерить вещи своими руками'],['♟️','Придумывать стратегии и планировать действия'],['⚽','Танцевать, двигаться и заниматься спортом'],['🎤','Общаться, выступать и придумывать что-то вместе с другими'],['🌈','Пока не знаю — хочу попробовать разное']
+  ]},
+  {id:'q2',icon:'⏳',title:'Если бы у тебя появилось свободное время, что бы ты скорее выбрал?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
+    ['🧱','Собрать что-нибудь новое'],['🎨','Придумать рисунок, поделку или собственный проект'],['🔎','Разобраться в интересном вопросе или загадке'],['🎮','Поиграть в игру или придумать свою'],['🧪','Провести опыт и проверить догадку'],['👥','Позвать друзей и сделать что-нибудь вместе'],['🌤️','Пока не знаю — зависит от настроения']
+  ]},
+  {id:'q3',icon:'🚀',title:'Что тебе хотелось бы попробовать, даже если ты ещё никогда этим не занимался?',rule:'Выбери до двух вариантов',max:2,exclusive:[8],options:[
+    ['🤖','Создать собственного робота'],['🎲','Придумать настольную или компьютерную игру'],['🏗️','Построить необычную конструкцию'],['🎬','Создать мультфильм или комикс'],['🔬','Проводить научные эксперименты'],['💻','Научиться программировать'],['🛠️','Сделать полезную вещь своими руками'],['🎭','Попробовать спорт, танцы или сценическое выступление'],['🌈','Пока не знаю — хочу посмотреть разные варианты']
+  ]},
+  {id:'q4',icon:'🧭',title:'Какой способ занятий тебе больше нравится?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
+    ['💡','Придумывать и создавать что-то своё'],['🧱','Собирать или делать по понятной инструкции'],['🧪','Экспериментировать и проверять разные идеи'],['🧠','Решать задания и искать ответы'],['👥','Работать вместе с другими ребятами'],['🛤️','Пробовать разные способы — без заранее известного ответа'],['🌈','Пока не знаю — хочу попробовать разные способы']
+  ]},
+  {id:'q5',icon:'🏁',title:'Что тебе приятнее в конце занятия?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
+    ['🛠️','Получить готовую вещь, которую я сделал'],['💡','Показать собственную идею или проект'],['✨','Узнать что-то новое и удивительное'],['🧠','Разобраться с трудной задачей'],['🤝','Сделать что-то вместе с командой'],['📈','Увидеть, что у меня получилось лучше, чем раньше'],['🌤️','Пока не знаю — зависит от занятия']
+  ]},
+  {id:'q6',icon:'🙅',title:'Что тебе обычно меньше нравится на занятиях?',rule:'Выбери не больше двух вариантов',max:2,exclusive:[7],options:[
+    ['🔁','Долго повторять одно и то же'],['🎧','Только слушать объяснения, почти ничего не делая'],['📋','Всегда делать строго по образцу, ничего не меняя'],['🧍','Работать одному, когда можно работать с другими'],['🎤','Когда нужно выступать перед всеми'],['😴','Когда задание слишком простое'],['⛰️','Когда задание слишком сложное'],['🌈','Пока не знаю — ещё не разобрался(лась), что мне не нравится']
+  ]},
+  {id:'q7',icon:'🎒',title:'Есть ли занятия, которыми ты уже занимаешься или занимался раньше?',rule:'Можно выбрать несколько вариантов',max:null,exclusive:[8,9],options:[
+    ['🤖','Робототехника или конструирование'],['🎨','Рисование, дизайн или рукоделие'],['💻','Программирование или создание игр'],['🔬','Научные кружки и эксперименты'],['♟️','Шахматы, логические игры или головоломки'],['🎭','Музыка, танцы, театр или вокал'],['⚽','Спорт'],['✨','Другие занятия'],['🌱','Пока ни на какие кружки не хожу'],['❔','Не помню / трудно ответить']
+  ]},
+  {id:'q8',icon:'🌟',title:'Чего бы тебе хотелось от нового кружка?',rule:'Выбери до двух вариантов',max:2,exclusive:[7],options:[
+    ['🧠','Научиться тому, чего я ещё не умею'],['🛠️','Создавать собственные проекты'],['🔥','Найти занятие, которое действительно увлекает'],['👥','Познакомиться с ребятами с похожими интересами'],['🏆','Подготовиться к соревнованию или выступлению'],['🧭','Попробовать новое и понять, нравится ли мне это'],['❤️','Продолжить заниматься тем, что я уже люблю'],['🌈','Пока не знаю — хочу сначала посмотреть варианты']
+  ]}
+];
 const AGE_PROFILES={
   '7-9':{
     label:'РАЗВЕДКА',brief:'2 простых маршрута · 2 сигнала · 4 ворот',commandLimit:12,tutorialTarget:2,memoryPace:620,memoryErrorLimit:2,chaseHitLimit:3,
@@ -114,7 +141,7 @@ function renderEvidence(){
 }
 function toast(text,ms=850){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),ms); }
 function stageUI(n,name,icon,text){ ui('stageName').textContent=name; ui('stageDots').textContent='●'.repeat(n)+'○'.repeat(6-n); missionCard.classList.remove('hidden'); ui('missionIcon').textContent=icon; ui('missionText').textContent=text; }
-function hideOverlays(){ [intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
+function hideOverlays(){ [questionnaire,intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
 
 const storyAssetUrls=[
   'assets/scene-forest-v2.webp','assets/scene-ruins-v2.webp','assets/scene-reactor-v2.webp','assets/scene-crystals-v2.webp','assets/scene-gates-v2.webp','assets/scene-storm-v2.webp',
@@ -159,12 +186,39 @@ function beep(freq=440,d=.08){ try{ audio ||= new AudioContext(); const o=audio.
 function updateAgeIntro(){const profile=ageProfile();ui('ageBrief').innerHTML=`<b>${profile.label}</b><span>${profile.brief}</span>`;}
 document.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{ document.querySelectorAll('[data-age]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); S.age=b.dataset.age; updateAgeIntro(); });
 updateAgeIntro();
+let surveyIndex=-1;
+const surveyAnswerCodes=()=>Object.fromEntries(SURVEY_QUESTIONS.map(q=>[q.id,(S.questionnaire.answers[q.id]||[]).map(index=>`${q.id}_o${index+1}`)]));
+function surveyLabels(questionId){const question=SURVEY_QUESTIONS.find(q=>q.id===questionId);return (S.questionnaire.answers[questionId]||[]).map(index=>question.options[index][1]);}
+function renderSurveyQuestion(){
+  const question=SURVEY_QUESTIONS[surveyIndex],selected=S.questionnaire.answers[question.id]||[];
+  ui('surveyProgress').textContent=`${surveyIndex+1} / ${SURVEY_QUESTIONS.length}`;ui('surveyIcon').textContent=question.icon;ui('surveyTitle').textContent=question.title;ui('surveyRule').textContent=question.rule;ui('surveyMessage').textContent='';
+  ui('surveyOptions').classList.toggle('survey-options-wide',question.options.length>8);
+  ui('surveyOptions').innerHTML=question.options.map(([emoji,label],index)=>`<button type="button" data-survey-option="${index}" aria-pressed="${selected.includes(index)}" class="${selected.includes(index)?'selected':''}"><span>${emoji}</span><b>${label}</b><i>✓</i></button>`).join('');
+  ui('surveyNext').disabled=selected.length===0;ui('surveyNext').textContent=surveyIndex===SURVEY_QUESTIONS.length-1?'Готово ✓':'Дальше →';
+  ui('surveyOptions').querySelectorAll('[data-survey-option]').forEach(button=>button.onclick=()=>toggleSurveyOption(Number(button.dataset.surveyOption)));
+}
+function toggleSurveyOption(index){
+  const question=SURVEY_QUESTIONS[surveyIndex];let selected=[...(S.questionnaire.answers[question.id]||[])];const selectedAt=selected.indexOf(index);
+  if(selectedAt>=0)selected.splice(selectedAt,1);
+  else if(question.max===1)selected=[index];
+  else if(question.exclusive.includes(index))selected=[index];
+  else{
+    selected=selected.filter(item=>!question.exclusive.includes(item));
+    if(question.max&&selected.length>=question.max){ui('surveyMessage').textContent=`Можно выбрать не больше ${question.max}`;return;}
+    selected.push(index);
+  }
+  S.questionnaire.answers[question.id]=selected;renderSurveyQuestion();beep(420+index*12,.04);
+}
+ui('surveyStart').onclick=()=>{surveyIndex=0;ui('surveyWelcome').classList.add('hidden');ui('surveyQuestion').classList.remove('hidden');renderSurveyQuestion();};
+ui('surveyBack').onclick=()=>{if(surveyIndex===0){surveyIndex=-1;ui('surveyQuestion').classList.add('hidden');ui('surveyWelcome').classList.remove('hidden');ui('surveyProgress').textContent='СТАРТ';return;}surveyIndex--;renderSurveyQuestion();};
+ui('surveyNext').onclick=()=>{const question=SURVEY_QUESTIONS[surveyIndex];if(!(S.questionnaire.answers[question.id]||[]).length)return;if(surveyIndex<SURVEY_QUESTIONS.length-1){surveyIndex++;renderSurveyQuestion();return;}S.questionnaire.completed=true;ui('surveyQuestion').classList.add('hidden');ui('surveyDone').classList.remove('hidden');ui('surveyProgress').textContent='ГОТОВО';beep(860,.16);};
+ui('surveyToGame').onclick=()=>{questionnaire.classList.add('hidden');intro.classList.remove('hidden');setStage('intro');ui('stageName').textContent='МИССИЯ';};
 ui('play').onclick=()=>{ warmStoryAssets();document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
 ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='МИССИЯ'; ui('stageDots').textContent=''; setStage('intro');document.body.classList.remove('game-active','portrait-ok'); };
 ui('rotateDismiss').onclick=()=>document.body.classList.add('portrait-ok');
 ui('logToggle').onclick=()=>logPanel.classList.toggle('open'); ui('logClose').onclick=()=>logPanel.classList.remove('open'); ui('openLogs').onclick=()=>logPanel.classList.add('open');
 
-function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},collected:0,moves:0,circuitRotations:0,memoryErrors:0,memoryRound:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7},taskPaused:false}); eventList.innerHTML=''; renderEvidence(); track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'evidence-model-v8-cross-task',thresholds:'mvp_candidates_not_age_norms'}); }
+function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},collected:0,moves:0,circuitRotations:0,memoryErrors:0,memoryRound:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7},taskPaused:false}); eventList.innerHTML=''; renderEvidence(); track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'evidence-model-v9-questionnaire',criteria:'pilot_predefined_not_age_norms'});track('interest_questionnaire_completed',{answers:surveyAnswerCodes(),questionCount:SURVEY_QUESTIONS.length}); }
 
 function loadMap(rows){ S.map=rows.map(r=>r.split('')); for(let y=0;y<S.map.length;y++)for(let x=0;x<S.map[y].length;x++)if(S.map[y][x]==='P'){S.player={x,y};S.chaseStart={x,y};S.map[y][x]='.';} }
 function startTutorial(){ const profile=ageProfile();hideOverlays(); setStage('tutorial'); S.collected=0; S.moves=0; loadMap(profile.tutorialMap); stageUI(1,'ПОЙМАЙ СИГНАЛ','⚡',`0 / ${profile.tutorialTarget}`); track('tutorial_started',{age:S.age,target:profile.tutorialTarget,mapVersion:profile.label});announceTask('tutorial'); }
@@ -220,8 +274,8 @@ async function runPlanProgram(){
   if(planRound<levels.length-1){planRound++;toast(`✓  →  ${planRound+1}/${levels.length}`,900);setTimeout(beginPlanRound,750);return;}
   const firstRunCount=planTrials.filter(t=>t.firstRunComplete).length,{totalOptimal,totalExecuted,routeEfficiency}=summarizeRouteEfficiency(planTrials),retryTrials=planTrials.filter(t=>t.revisionOpportunity);
   planningSummary={firstRunCount,totalTrials:levels.length,routeEfficiency,totalOptimal,totalExecuted,retryOpportunities:retryTrials.length,revisionImproved:retryTrials.length?retryTrials.some(t=>t.revisionImproved):null};
-  observation('planning','completePlan',firstRunCount>=MVP_THRESHOLDS.firstRunRoutes,{firstRunCount,trials:levels.length,age:S.age,threshold:MVP_THRESHOLDS.firstRunRoutes,thresholdStatus:'mvp_candidate'});
-  observation('planning','planEfficiency',routeEfficiency>=MVP_THRESHOLDS.planEfficiency,{measured:+routeEfficiency.toFixed(2),minimumPath:totalOptimal,childPath:totalExecuted,formula:'minimum_path/child_path',threshold:MVP_THRESHOLDS.planEfficiency,thresholdStatus:'mvp_candidate'});
+  observation('planning','completePlan',firstRunCount>=PILOT_CRITERIA.firstRunRoutes,{firstRunCount,trials:levels.length,age:S.age,criterion:PILOT_CRITERIA.firstRunRoutes,criterionStatus:'pilot_predefined'});
+  observation('planning','planEfficiency',routeEfficiency>=PILOT_CRITERIA.planEfficiency,{measured:+routeEfficiency.toFixed(2),minimumPath:totalOptimal,childPath:totalExecuted,formula:'minimum_path/child_path',criterion:PILOT_CRITERIA.planEfficiency,criterionStatus:'pilot_predefined'});
   observation('problem','adaptiveRevision',retryTrials.length?retryTrials.some(t=>t.revisionImproved):null,{sourceTask:'drone',opportunities:retryTrials.length,reason:retryTrials.length?'feedback_used':'not_needed'});
   setTimeout(()=>showCutscene('reactor',startCircuit),850);
 }
@@ -260,9 +314,9 @@ function finishCircuit(){
   const totalRotations=circuitTrials.reduce((sum,trial)=>sum+trial.rotations,0),totalProductive=circuitTrials.reduce((sum,trial)=>sum+trial.productiveActions,0),totalNonproductiveRepeats=circuitTrials.reduce((sum,trial)=>sum+trial.nonproductiveRepeats,0);
   const avgProductive=totalProductive/Math.max(1,totalRotations),repeatRatio=totalNonproductiveRepeats/Math.max(1,totalRotations),transferObserved=!circuitTrials[1].hintUsed&&(circuitTrials[1].productiveRatio>=circuitTrials[0].productiveRatio-.15||circuitTrials[1].rotations<=circuitTrials[0].rotations);
   problemSummary={avgProductive,repeatRatio,transferObserved,totalRotations,totalNonproductiveRepeats};
-  observation('problem','productiveSearch',avgProductive>=MVP_THRESHOLDS.productiveSearch,{measured:+avgProductive.toFixed(2),formula:'productive_actions/all_rotations',threshold:MVP_THRESHOLDS.productiveSearch,thresholdStatus:'mvp_candidate'});
-  observation('problem','lowRepetition',repeatRatio<=MVP_THRESHOLDS.nonproductiveRepeat,{measured:+repeatRatio.toFixed(2),repeatedStates:totalNonproductiveRepeats,formula:'revisited_whole_board_states_without_progress/all_rotations',threshold:MVP_THRESHOLDS.nonproductiveRepeat,thresholdStatus:'mvp_candidate'});
-  observation('problem','transfer',transferObserved,{round1:circuitTrials[0],round2:circuitTrials[1],thresholdStatus:'mvp_candidate'});
+  observation('problem','productiveSearch',avgProductive>=PILOT_CRITERIA.productiveSearch,{measured:+avgProductive.toFixed(2),formula:'productive_actions/all_rotations',criterion:PILOT_CRITERIA.productiveSearch,criterionStatus:'pilot_predefined'});
+  observation('problem','lowRepetition',repeatRatio<=PILOT_CRITERIA.nonproductiveRepeat,{measured:+repeatRatio.toFixed(2),repeatedStates:totalNonproductiveRepeats,formula:'revisited_whole_board_states_without_progress/all_rotations',criterion:PILOT_CRITERIA.nonproductiveRepeat,criterionStatus:'pilot_predefined'});
+  observation('problem','transfer',transferObserved,{round1:circuitTrials[0],round2:circuitTrials[1],criterionStatus:'pilot_predefined'});
   setTimeout(()=>showCutscene('echo',startMemory),CIRCUIT_SUCCESS_HOLD_MS);
 }
 
@@ -275,7 +329,7 @@ function beginMemoryRound(){ const profile=ageProfile();sequence=profile.memoryS
 async function showSequence(token=memoryPlaybackToken){ showing=true;setMemoryInputEnabled(false);ui('memoryFeedback').classList.add('hidden');ui('memoryHint').textContent='👁️'; await wait(350);if(token!==memoryPlaybackToken||S.stage!=='memory')return; for(const p of sequence){ flashPad(p); await wait(ageProfile().memoryPace);if(token!==memoryPlaybackToken||S.stage!=='memory')return; } showing=false;setMemoryInputEnabled(true);ui('memoryHint').textContent='👆'; }
 function flashPad(i){ const b=document.querySelector(`[data-pad="${i}"]`); b.classList.add('flash'); beep([420,520,620,720][i]); setTimeout(()=>b.classList.remove('flash'),260); }
 async function replayAfterMemoryError(){const token=++memoryPlaybackToken;showing=true;setMemoryInputEnabled(false);ui('memoryHint').textContent='✕';ui('memoryFeedback').classList.remove('hidden');for(let seconds=MEMORY_ERROR_PAUSE_SECONDS;seconds>0;seconds--){ui('memoryFeedbackText').textContent=`Пауза. Повтор через ${seconds}…`;await wait(1000);if(token!==memoryPlaybackToken||S.stage!=='memory')return;}ui('memoryFeedback').classList.add('hidden');await showSequence(token);}
-function padInput(i){ if(S.taskPaused||showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); input=[];replayAfterMemoryError();return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++;setMemoryInputEnabled(false); ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit,thresholdStatus:'mvp_candidate_not_age_norm'});beep(980,.2);setTimeout(()=>showCutscene('gates',startAdapt),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
+function padInput(i){ if(S.taskPaused||showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); input=[];replayAfterMemoryError();return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++;setMemoryInputEnabled(false); ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit,criterionStatus:'pilot_predefined_not_age_norm'});beep(980,.2);setTimeout(()=>showCutscene('gates',startAdapt),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function startAdapt(){ const profile=ageProfile();hideOverlays(); setStage('adapt'); S.adaptGate=0; S.adaptErrors=0; S.rule='blue'; S.switchPending=false; S.switchResults=[]; stageUI(5,'ВОРОТА БУРИ','🔵',`0 / ${profile.adaptDoors.length}`); track('adaptation_started',{age:S.age,rule:'blue',gates:profile.adaptDoors.length,switches:profile.adaptSwitches.length});announceTask('adapt'); }
@@ -286,7 +340,7 @@ function adaptChoice(lane){
     track('gate_choice',{gate:S.adaptGate+1,color:chosen,correct:true},'regulation',0); S.adaptGate++; beep(740);
     stageUI(5,'ВОРОТА БУРИ',S.rule==='blue'?'🔵':'🩷',`${S.adaptGate} / ${profile.adaptDoors.length}`);
     if(profile.adaptSwitches.includes(S.adaptGate)){const old=S.rule;S.rule=S.rule==='blue'?'pink':'blue';S.switchPending=true;stageUI(5,'ПРАВИЛО ИЗМЕНИЛОСЬ',S.rule==='blue'?'🔵':'🩷',`${S.adaptGate} / ${profile.adaptDoors.length}`);track('rule_changed',{age:S.age,from:old,to:S.rule,afterGate:S.adaptGate});toast(old==='blue'?'🔵 ×    🩷 ✓':'🩷 ×    🔵 ✓',1200);}
-    if(S.adaptGate===profile.adaptDoors.length){const expected=profile.adaptSwitches.length;observation('regulation','ruleSwitch',S.switchResults.length===expected&&S.switchResults.every(Boolean),{age:S.age,expectedSwitches:expected,firstChoices:S.switchResults,errors:S.adaptErrors,thresholdStatus:'mvp_candidate_not_age_norm'});track('adaptation_completed',{age:S.age,errors:S.adaptErrors,switchResults:S.switchResults},'regulation',0);setTimeout(()=>showCutscene('storm',startChase),450);}
+    if(S.adaptGate===profile.adaptDoors.length){const expected=profile.adaptSwitches.length;observation('regulation','ruleSwitch',S.switchResults.length===expected&&S.switchResults.every(Boolean),{age:S.age,expectedSwitches:expected,firstChoices:S.switchResults,errors:S.adaptErrors,criterionStatus:'pilot_predefined_not_age_norm'});track('adaptation_completed',{age:S.age,errors:S.adaptErrors,switchResults:S.switchResults},'regulation',0);setTimeout(()=>showCutscene('storm',startChase),450);}
   }
   else { S.adaptErrors++; track('old_rule_error',{gate:S.adaptGate+1,color:chosen,activeRule:S.rule},'regulation',0); beep(120); toast('×'); }
 }
@@ -301,7 +355,7 @@ function chaseStep(){
   if(S.recovering){S.recovering=false;S.resumedAfterFailure++;track('resumed_after_failure',{hits:S.chaseHits,resumed:S.resumedAfterFailure},'regulation',2);}
   if(S.map[S.player.y][S.player.x]==='E'){
     const hadRecoveryOpportunity=S.chaseHits>0;
-    observation('regulation','goalReturn',goalReturnObservation(S.chaseHits,S.resumedAfterFailure,ageProfile().chaseHitLimit),{age:S.age,hits:S.chaseHits,resumed:S.resumedAfterFailure,opportunity:hadRecoveryOpportunity,limit:ageProfile().chaseHitLimit,reason:hadRecoveryOpportunity?'measured':'no_collision',thresholdStatus:'mvp_candidate_not_age_norm'});
+    observation('regulation','goalReturn',goalReturnObservation(S.chaseHits,S.resumedAfterFailure,ageProfile().chaseHitLimit),{age:S.age,hits:S.chaseHits,resumed:S.resumedAfterFailure,opportunity:hadRecoveryOpportunity,limit:ageProfile().chaseHitLimit,reason:hadRecoveryOpportunity?'measured':'no_collision',criterionStatus:'pilot_predefined_not_age_norm'});
     track('pet_rescued',{age:S.age,moves:S.moves,hits:S.chaseHits,resumed:S.resumedAfterFailure},'regulation',0);showCutscene('rescue',finishGame);
   }
 }
@@ -314,16 +368,17 @@ function finishGame(){
   const unavailable=[];
   if(S.observations.problem.adaptiveRevision===null)unavailable.push('исправление программы — повторный запуск не потребовался');
   if(S.observations.regulation.goalReturn===null)unavailable.push('возврат к цели — столкновения не было');
-  ui('resultStory').textContent=`Измерено ${totalObserved} из ${totalIndicators} поведенческих показателей.${unavailable.length?` Не оценивались: ${unavailable.join('; ')}.`:''} Все пороги — рабочие настройки MVP, а не возрастные нормы. Это описание действий в заданиях для возраста ${S.age}, а не оценка личности.`;
+  ui('resultStory').textContent=`Измерено ${totalObserved} из ${totalIndicators} поведенческих показателей.${unavailable.length?` Не оценивались: ${unavailable.join('; ')}.`:''} Это описание действий в заданиях для возраста ${S.age}, а не оценка личности.`;
+  ui('surveySummary').innerHTML=`<b>Стартовая анкета</b><span><strong>Интересы:</strong> ${surveyLabels('q1').join(' · ')}</span><span><strong>Формат:</strong> ${surveyLabels('q4').join(' · ')}</span><span><strong>Ожидания:</strong> ${surveyLabels('q8').join(' · ')}</span>`;
   const domains=[['planning','Планирование'],['problem','Решение проблем'],['regulation','Саморегуляция: контроль действий']];
   const displayLabel=(domain,key,label)=>{
-    if(domain==='planning'&&planningSummary){if(key==='completePlan')return `полный план с первого запуска: ${planningSummary.firstRunCount}/${planningSummary.totalTrials} · рабочий порог MVP: ${MVP_THRESHOLDS.firstRunRoutes}`;if(key==='planEfficiency')return `эффективность в 2 маршрутах дрона: ${Math.round(planningSummary.routeEfficiency*100)}% · минимальный путь ${planningSummary.totalOptimal}, путь ребёнка ${planningSummary.totalExecuted} · рабочий порог MVP: ${Math.round(MVP_THRESHOLDS.planEfficiency*100)}%`;}
-    if(domain==='problem'){if(key==='adaptiveRevision'&&planningSummary)return planningSummary.retryOpportunities?`изменение программы дрона после ошибки: ${planningSummary.revisionImproved?'помогло продвинуться':'не улучшило результат'}`:'изменение программы дрона: не оценивалось, повторный запуск не потребовался';if(key==='productiveSearch'&&problemSummary)return `продуктивные повороты цепи: ${Math.round(problemSummary.avgProductive*100)}% · рабочий порог MVP: ${Math.round(MVP_THRESHOLDS.productiveSearch*100)}%`;if(key==='lowRepetition'&&problemSummary)return `возвраты к уже встречавшемуся состоянию без прогресса: ${Math.round(problemSummary.repeatRatio*100)}% · рабочий предел MVP: ${Math.round(MVP_THRESHOLDS.nonproductiveRepeat*100)}%`;if(key==='transfer'&&problemSummary)return `перенос способа во вторую цепь: ${problemSummary.transferObserved?'наблюдался':'не наблюдался'}`;}
-    if(domain==='regulation'){if(key==='loadControl')return `контроль после ошибки памяти: ${S.memoryErrors} ошибок · рабочий предел MVP: ${ageProfile().memoryErrorLimit}`;if(key==='ruleSwitch')return `смена правила: ${S.switchResults.filter(Boolean).length}/${ageProfile().adaptSwitches.length} первых выборов`;if(key==='goalReturn')return S.chaseHits?`возврат к цели после столкновения: ${S.resumedAfterFailure}/${S.chaseHits} продолжений · рабочий предел MVP: ≤ ${ageProfile().chaseHitLimit} столкновений`:'возврат к цели: не оценивался, столкновения не было';}
+    if(domain==='planning'&&planningSummary){if(key==='completePlan')return `полный план с первого запуска: ${planningSummary.firstRunCount}/${planningSummary.totalTrials}`;if(key==='planEfficiency')return `эффективность в 2 маршрутах дрона: ${Math.round(planningSummary.routeEfficiency*100)}% · минимальный путь ${planningSummary.totalOptimal}, путь ребёнка ${planningSummary.totalExecuted}`;}
+    if(domain==='problem'){if(key==='adaptiveRevision'&&planningSummary)return planningSummary.retryOpportunities?`изменение программы дрона после ошибки: ${planningSummary.revisionImproved?'помогло продвинуться':'не улучшило результат'}`:'изменение программы дрона: не оценивалось, повторный запуск не потребовался';if(key==='productiveSearch'&&problemSummary)return `продуктивные повороты цепи: ${Math.round(problemSummary.avgProductive*100)}%`;if(key==='lowRepetition'&&problemSummary)return `возвраты к уже встречавшемуся состоянию без прогресса: ${Math.round(problemSummary.repeatRatio*100)}%`;if(key==='transfer'&&problemSummary)return `перенос способа во вторую цепь: ${problemSummary.transferObserved?'наблюдался':'не наблюдался'}`;}
+    if(domain==='regulation'){if(key==='loadControl')return `контроль после ошибки памяти: ${S.memoryErrors} ошибок`;if(key==='ruleSwitch')return `смена правила: ${S.switchResults.filter(Boolean).length}/${ageProfile().adaptSwitches.length} первых выборов`;if(key==='goalReturn')return S.chaseHits?`возврат к цели после столкновения: ${S.resumedAfterFailure}/${S.chaseHits} продолжений`:'возврат к цели: не оценивался, столкновения не было';}
     return label;
   };
   ui('reportDetails').innerHTML=domains.map(([domain,title])=>`<article><b>${title}</b>${Object.entries(observationNames[domain]).map(([key,label])=>{const value=S.observations[domain][key];return `<span class="${value===true?'yes':value===false?'no':''}">${value===true?'●':value===false?'○':'—'} ${displayLabel(domain,key,label)}</span>`}).join('')}</article>`).join('');
-  track('diagnostic_completed',{observations:S.observations,counts:{plan,problem,reg},observed:{plan:planObserved,problem:problemObserved,reg:regObserved},available:{plan:planTotal,problem:problemTotal,reg:regTotal},limits:'screening_not_diagnosis;thresholds_are_mvp_candidates'});beep(1040,.3);
+  track('diagnostic_completed',{observations:S.observations,counts:{plan,problem,reg},observed:{plan:planObserved,problem:problemObserved,reg:regObserved},available:{plan:planTotal,problem:problemTotal,reg:regTotal},limits:'screening_not_diagnosis;pilot_criteria_not_age_norms'});beep(1040,.3);
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 

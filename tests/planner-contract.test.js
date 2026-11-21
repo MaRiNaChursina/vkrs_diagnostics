@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(require('node:path').join(__dirname, '..', 'dist', 'app.js'), 'utf8');
+const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'dist', 'index.html'), 'utf8');
 const match = source.match(/const AGE_PROFILES=(\{[\s\S]*?\});\s*const ageProfile/);
 assert(match, 'AGE_PROFILES must be readable from app.js');
 const profiles = vm.runInNewContext(`(${match[1]})`);
@@ -57,6 +58,22 @@ for (const [age, profile] of Object.entries(profiles)) {
 
 assert(source.includes('if(S.taskPaused||planRunning||planQueue.length>=ageProfile().commandLimit)return'), 'input is blocked while paused/running and capped by age profile');
 assert(source.includes("ui('programRun').disabled=!planQueue.length||planRunning"), 'empty/running launch is disabled');
-assert(source.includes("retryTrials.length?retryTrials.some(t=>t.revisionImproved):null"), 'revision is not inferred without an opportunity');
+assert(source.includes("observation('problem','adaptiveRevision',retryTrials.length?retryTrials.some(t=>t.revisionImproved):null"), 'drone revision is cross-task evidence for problem solving and is not inferred without an opportunity');
+const efficiencyMatch = source.match(/function summarizeRouteEfficiency\(trials\)\{[^\n]+\}/);
+assert(efficiencyMatch, 'route efficiency summary is independently testable');
+const summarizeRouteEfficiency = vm.runInNewContext(`(${efficiencyMatch[0]})`);
+const weighted = summarizeRouteEfficiency([{ optimal: 7, executedLength: 7 }, { optimal: 8, executedLength: 10 }]);
+assert.equal(weighted.totalOptimal, 15);
+assert.equal(weighted.totalExecuted, 17);
+assert.equal(Math.round(weighted.routeEfficiency * 100), 88, '7/7 and 8/10 combine to 15/17 = 88%, not 90%');
+assert.equal(summarizeRouteEfficiency([{ optimal: 6, executedLength: 4 }]).routeEfficiency, 1, 'efficiency is capped at 100%');
+assert(source.includes('executedLength=executed'), 'route length stops when the goal is actually reached');
+assert(source.includes("formula:'minimum_path/child_path'"), 'the logged formula is explicit and auditable');
+assert(source.includes('minimumPath:totalOptimal,childPath:totalExecuted'), 'logs use parent-readable route terms');
+assert(source.includes('эффективность в 2 маршрутах дрона'), 'the parent report names where route efficiency is measured');
+assert(source.includes('минимальный путь ${planningSummary.totalOptimal}, путь ребёнка ${planningSummary.totalExecuted}'), 'the parent report explains both values');
+assert(html.includes('эффективность двух маршрутов дрона'), 'the evidence map names the two drone routes');
+assert(!source.includes('эталон'), 'the ambiguous word “эталон” is absent from the report');
+assert(!source.includes('planTrials.reduce((s,t)=>s+t.efficiency,0)/planTrials.length'), 'percentages are not averaged across unequal routes');
 
 console.log(`PASS: ${Object.keys(profiles).length} age profiles, 6 planning maps and 3 behavioral contracts`);

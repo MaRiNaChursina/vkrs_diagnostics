@@ -3,59 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>НОВА: ПУТЬ К БИТУ — игровое приключение</title>
-  <meta name="description" content="Сюжетное игровое приключение с незаметным сбором поведенческих показателей">
+  <title>НОВА-СИТИ — один день героя</title>
+  <meta name="description" content="Создай героя и проживи один день в сюжетной игровой симуляции">
   <link rel="preload" as="image" href="assets/scene-forest-v2.webp" type="image/webp">
   <link rel="preload" as="image" href="assets/nova-character.webp" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=questionnaire-20261031a">
+  <link rel="stylesheet" href="styles.css?v=interest-interludes-20261121a">
 </head>
-<body data-stage="questionnaire">
+<body data-stage="creator">
   <main class="shell">
     <header class="hud-top">
-      <div class="logo"><b>N</b><span>НОВА // ПУТЬ К БИТУ<small>приключение «Точка интереса»</small></span></div>
+      <div class="logo"><b>N</b><span>НОВА-СИТИ<small>один день героя · «Точка интереса»</small></span></div>
       <div class="hud-center"><span id="stageDots"></span><strong id="stageName">МИССИЯ</strong></div>
       <button id="logToggle" class="log-toggle" type="button">◉ ЛОГИ</button>
     </header>
 
     <section class="game-frame" id="gameFrame">
       <canvas id="game" width="960" height="540" aria-label="Игровое поле"></canvas>
-      <div class="questionnaire overlay" id="questionnaire" aria-live="polite">
-        <div class="survey-card">
-          <div class="survey-head">
-            <span class="survey-kicker">ТОЧКА ИНТЕРЕСА</span>
-            <span id="surveyProgress" class="survey-progress">СТАРТ</span>
-          </div>
-          <div id="surveyWelcome" class="survey-welcome">
-            <div class="survey-orbit" aria-hidden="true"><span>🧭</span><i>🎮</i><i>🎨</i><i>🔬</i><i>🤖</i></div>
-            <h1>Что тебе интересно?</h1>
-            <p>Выбирай то, что тебе действительно нравится. Не обязательно уже уметь — достаточно хотеть попробовать.</p>
-            <small>Здесь нет правильных и неправильных ответов</small>
-            <button id="surveyStart" class="survey-start" type="button">Начать <span>→</span></button>
-          </div>
-          <div id="surveyQuestion" class="survey-question hidden">
-            <div class="survey-title-row"><span id="surveyIcon">✨</span><div><h2 id="surveyTitle"></h2><p id="surveyRule"></p></div></div>
-            <div id="surveyOptions" class="survey-options" role="group"></div>
-            <div id="surveyMessage" class="survey-message" role="status"></div>
-            <div class="survey-actions"><button id="surveyBack" type="button">← Назад</button><button id="surveyNext" type="button" disabled>Дальше →</button></div>
-          </div>
-          <div id="surveyDone" class="survey-done hidden">
-            <div class="survey-done-icon" aria-hidden="true">✓</div>
-            <h2>Маршрут настроен</h2>
-            <p>Теперь выбери возраст и отправляйся искать Бита.</p>
-            <button id="surveyToGame" class="survey-start" type="button">К игре <span>→</span></button>
+      <div id="simHud" class="sim-hud hidden" aria-label="Состояние дня">
+        <span><i>◷</i><b id="simTime">08:30</b></span>
+        <span><i>⚡</i><b id="simEnergy">4/4</b></span>
+        <span><i>♥</i><b>Бит</b><em><i id="simBondBar"></i></em></span>
+        <span><i>✦</i><b>Проект</b><em><i id="simProjectBar"></i></em></span>
+      </div>
+      <div class="creator overlay" id="creator" aria-live="polite">
+        <div class="creator-shell">
+          <header class="creator-head"><div><span>СОЗДАНИЕ ГЕРОЯ</span><h1>Кто проживёт этот день?</h1></div><button id="randomizeHero" type="button" aria-label="Случайный герой">🎲 <span>Случайно</span></button></header>
+          <div class="creator-body">
+            <section class="avatar-stage" aria-label="Предпросмотр героя">
+              <div class="avatar-aura"><i></i><i></i><i></i></div>
+              <div id="avatarPreview" class="avatar-preview"></div>
+              <div class="avatar-platform"></div>
+              <div class="avatar-turn"><button id="turnLeft" type="button" aria-label="Повернуть влево">↶</button><strong id="heroCallsign">НОВА</strong><button id="turnRight" type="button" aria-label="Повернуть вправо">↷</button></div>
+              <small>Все изменения видны сразу</small>
+            </section>
+            <section class="creator-panel">
+              <nav class="creator-tabs" aria-label="Настройки героя">
+                <button class="active" data-creator-tab="identity" type="button"><span>✦</span><b>Герой</b></button>
+                <button data-creator-tab="face" type="button"><span>☺</span><b>Лицо</b></button>
+                <button data-creator-tab="hair" type="button"><span>✂</span><b>Волосы</b></button>
+                <button data-creator-tab="outfit" type="button"><span>◆</span><b>Одежда</b></button>
+                <button data-creator-tab="extra" type="button"><span>★</span><b>Детали</b></button>
+                <button data-creator-tab="trait" type="button"><span>☼</span><b>Характер</b></button>
+              </nav>
+              <div class="creator-section-head"><div><span id="creatorSectionIcon">✦</span><h2 id="creatorSectionTitle">Выбери имя героя</h2></div><small id="creatorSectionStep">1 / 5</small></div>
+              <div id="creatorChoices" class="creator-choices" role="group"></div>
+              <div class="creator-actions"><span id="creatorHint">Можно всё изменить позже</span><button id="createHero" type="button">Герой готов <b>→</b></button></div>
+            </section>
           </div>
         </div>
       </div>
       <div class="intro overlay hidden" id="intro">
-        <div class="hero-lockup"><div class="traveler-portrait"><span>🧒</span></div><div class="signal-rings"><i></i><i></i><div class="bit-face">•ᴗ•</div></div></div>
-        <p class="kicker">ЗА ШТОРМОМ ТИШИНЫ</p><h1>Путь к Биту</h1>
-        <p class="intro-story">Его сигнал погас. Но искры ещё ведут вперёд.</p>
-        <div class="intro-icons"><span>🧭</span><b>→</b><span>✦</span><b>→</b><span>🐾</span></div>
+        <div class="hero-lockup"><div id="introAvatar" class="intro-avatar"></div><div class="signal-rings"><i></i><i></i><div class="bit-face">•ᴗ•</div></div></div>
+        <p class="kicker">СЕГОДНЯ В НОВА-СИТИ</p><h1>Фестиваль света</h1>
+        <p class="intro-story">Создай проект, проживи день и реши, каким станет финал.</p>
+        <div class="intro-icons"><span>🏠</span><b>→</b><span>🛠</span><b>→</b><span>🎆</span></div>
         <div class="age-switch" aria-label="Возраст"><button data-age="7-9">7–9</button><button data-age="10-12" class="active">10–12</button><button data-age="13-14">13–14</button></div>
         <div class="age-brief" id="ageBrief" aria-live="polite"><b>ЭКСПЕДИЦИЯ</b><span>2 маршрута · 3 сигнала · 6 ворот</span></div>
         <button id="play" class="play" type="button"><span>▶</span></button>
+        <button id="editHero" class="edit-hero" type="button">✦ Изменить героя</button>
         <small>Играй стрелками или WASD · около 8 минут</small>
         <small class="mobile-note">На телефоне удобнее играть горизонтально</small>
+      </div>
+      <div class="life-sim overlay hidden" id="lifeSim" data-location="home">
+        <div class="life-world" aria-hidden="true">
+          <div class="life-sky"><i></i><i></i><i></i></div>
+          <div class="life-city"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="life-room"><div class="life-window"></div><div class="life-desk"><i></i></div><div class="life-project"></div></div>
+          <div id="lifeAvatar" class="life-avatar"></div>
+          <img class="life-bit" src="assets/bit-character.webp" alt="Бит">
+          <div id="lifeReaction" class="life-reaction">!</div>
+        </div>
+        <section class="life-card">
+          <header><span id="lifeLocation">ДОМ · УТРО</span><b id="lifeClock">08:30</b></header>
+          <p id="lifeSpeaker" class="life-speaker">БИТ</p>
+          <h2 id="lifeTitle">Сегодня всё решится</h2>
+          <p id="lifeText">До открытия фестиваля осталось несколько часов.</p>
+          <div id="lifeChoices" class="life-choices"></div>
+          <div id="lifeOutcome" class="life-outcome hidden"><b id="lifeOutcomeTitle">Решение принято</b><p id="lifeOutcomeText"></p><div id="lifeChanges"></div><button id="lifeContinue" type="button">Продолжить день <span>→</span></button></div>
+        </section>
+      </div>
+      <div class="profile-scene overlay hidden" id="profileScene" data-theme="backpack" aria-live="polite">
+        <div class="profile-world" aria-hidden="true">
+          <div class="profile-sky"><i></i><i></i><i></i></div>
+          <div class="profile-landmarks"><i></i><i></i><i></i><i></i></div>
+          <div id="profileHero" class="profile-hero"></div>
+          <div id="profileProp" class="profile-prop">🎒</div>
+        </div>
+        <section class="profile-card" aria-labelledby="profileTitle">
+          <header><span id="profileChapter">СБОРЫ В ДОРОГУ</span><b id="profileProgress">1 / 8</b></header>
+          <div class="profile-title-row"><span id="profileIcon">🎒</span><div><h2 id="profileTitle">Что возьмём с собой?</h2><p id="profilePrompt">Выбери до трёх вариантов</p></div></div>
+          <div id="profileOptions" class="profile-options" role="group"></div>
+          <div class="profile-footer"><span id="profileMessage">Выбор можно изменить до продолжения</span><button id="profileContinue" type="button" disabled>Продолжить</button></div>
+        </section>
       </div>
       <div class="cutscene overlay hidden" id="cutscene" data-scene="prologue">
         <div class="cinema" aria-hidden="true">
@@ -89,7 +128,7 @@
       </div>
 
       <div class="puzzle overlay hidden" id="plannerPuzzle">
-        <div class="puzzle-head"><b>2/6</b><span><i id="planRound">1/2</i> · 🤖 → ⚡ → 🚪</span></div>
+        <div class="puzzle-head"><b>МАСТЕРСКАЯ</b><span><i id="planRound">1/2</i> · доставь батарею 🤖 → ⚡ → 🚪</span></div>
         <div class="planner-layout">
           <div id="planGrid" class="plan-grid" aria-label="Поле маршрута дрона"></div>
           <div class="programmer">
@@ -107,23 +146,24 @@
       </div>
 
       <div class="puzzle overlay hidden" id="circuitPuzzle">
-        <div class="puzzle-head"><b>3/6</b><span><i id="circuitRound">1/2</i> · ⚡ → 🐾</span></div>
-        <div class="power-line"><i class="power-source">⚡</i><div id="circuitGrid" class="circuit-grid"></div><i class="power-target">🐾</i></div>
+        <div class="puzzle-head"><b>ПЛОЩАДЬ</b><span><i id="circuitRound">1/2</i> · верни свет ⚡ → 🎆</span></div>
+        <div class="power-line"><i class="power-source">⚡</i><div id="circuitGrid" class="circuit-grid"></div><i class="power-target">🎆</i></div>
         <div class="gesture-hint">👆 ↻ <button id="circuitHint" type="button" aria-label="Показать подсказку">?</button></div>
       </div>
       <div class="puzzle overlay hidden" id="memoryPuzzle">
-        <div class="puzzle-head"><b>4/6</b><span id="memoryHint">👁️</span></div>
+        <div class="puzzle-head"><b>РЕПЕТИЦИЯ ШОУ</b><span id="memoryHint">👁️</span></div>
         <div id="pads" class="pads"><button data-pad="0" aria-label="Бирюзовый сигнал"></button><button data-pad="1" aria-label="Розовый сигнал"></button><button data-pad="2" aria-label="Жёлтый сигнал"></button><button data-pad="3" aria-label="Фиолетовый сигнал"></button></div>
         <div id="memoryFeedback" class="memory-feedback hidden" role="status" aria-live="assertive"><div><b>Неправильно</b><span id="memoryFeedbackText">Пауза. Повтор через 3…</span></div></div>
         <button id="memoryStart" class="round-play" type="button">▶</button><div id="roundMarks" class="round-marks">○ ○</div>
       </div>
       <div class="result overlay hidden" id="result">
         <div class="rescued"><span>🧒</span><div class="bit-face small">•ᴗ•</div><i>♥</i></div>
-        <p class="kicker">МИССИЯ ЗАВЕРШЕНА</p><h2>Бит найден!</h2>
+        <p class="kicker">ДЕНЬ ЗАВЕРШЁН</p><h2>Фестиваль открыт!</h2>
         <div class="report-status"><b>ПРЕДВАРИТЕЛЬНЫЙ ПРОФИЛЬ</b><span>поведение в этой игре, не диагноз</span></div>
         <div class="result-grid"><div><b id="planScore">—</b><span>Планирование</span></div><div><b id="problemScore">—</b><span>Решение проблем</span></div><div><b id="regScore">—</b><span>Саморегуляция</span></div></div>
         <p id="resultStory" class="result-story"></p>
-        <div id="surveySummary" class="survey-summary"></div>
+        <div id="heroSummary" class="hero-summary"></div>
+        <div id="interestSummary" class="interest-summary"></div>
         <div id="reportDetails" class="report-details"></div>
         <div class="result-actions"><button id="openLogs">Цифровой след</button><button id="again">↻</button></div>
         <small>Демонстрационные показатели, не психологический диагноз</small>
@@ -133,6 +173,6 @@
     <div class="controls" id="touchControls" aria-label="Управление"><span id="controlsHint" class="controls-hint">Двигай героя</span><button data-move="up" aria-label="Вверх">▲</button><div><button data-move="left" aria-label="Влево">◀</button><button data-move="down" aria-label="Вниз">▼</button><button data-move="right" aria-label="Вправо">▶</button></div></div>
   </main>
   <aside class="log-panel" id="logPanel"><header><div><small>РЕЖИМ ИССЛЕДОВАТЕЛЯ</small><h2>Цифровой след</h2></div><button id="logClose">×</button></header><div class="evidence"><span>План<b id="evPlan">0/2</b></span><span>Проблемы<b id="evProblem">0/4</b></span><span>Саморегуляция<b id="evReg">0/3</b></span></div><div class="model-map"><b>Модель доказательств</b><span>Планирование, основные данные: полный план и эффективность двух маршрутов дрона</span><span>Решение проблем, перекрёстные данные: продуктивный поиск и перенос в двух цепях, возвраты к прежнему состоянию, изменение программы дрона после ошибки</span><span>Саморегуляция: контроль после ошибки памяти, смена правила, возврат к цели после столкновения</span><small>Показаны наблюдаемые действия в игре, а не возрастные нормы</small></div><ol id="events"></ol></aside>
-  <script src="app.js?v=questionnaire-20261031a"></script>
+  <script src="app.js?v=interest-interludes-20261121a"></script>
 </body>
 </html>

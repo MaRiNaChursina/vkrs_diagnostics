@@ -13,8 +13,12 @@ for (const id of ['cutscene', 'sceneStage', 'sceneChapter', 'sceneTitle', 'scene
 
 for (const scene of ['prologue', 'beacon', 'reactor', 'echo', 'gates', 'storm', 'rescue']) {
   assert(js.includes(`${scene}:`), `story data contains ${scene}`);
-  assert(js.includes(`'${scene}'`), `story flow invokes ${scene}`);
 }
+for (const scene of ['reactor', 'echo', 'gates', 'storm', 'rescue']) {
+  assert(js.includes(`showCutscene('${scene}'`), `active story flow invokes ${scene}`);
+}
+assert(js.includes("showLifeEpisode('morning'"), 'the story starts as a life-simulation episode');
+assert(js.includes("showLifeEpisode('workshop'"), 'the workshop is entered through a consequential choice');
 
 assert(js.includes("track('cutscene_started'"), 'cutscenes are represented in the event log');
 assert(js.includes("track('cutscene_action'"), 'player actions inside cutscenes are represented in the event log');

@@ -16,15 +16,19 @@ window.addEventListener('resize',syncVisibleViewport,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(syncVisibleViewport,120),{passive:true});
 window.visualViewport?.addEventListener('resize',syncVisibleViewport,{passive:true});
 
-const questionnaire = ui('questionnaire'), intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
+const creator = ui('creator'), intro = ui('intro'), missionCard = ui('missionCard'), toastEl = ui('toast');
 const plannerPuzzle = ui('plannerPuzzle'), circuitPuzzle = ui('circuitPuzzle'), memoryPuzzle = ui('memoryPuzzle'), result = ui('result'), cutscene = ui('cutscene');
+const lifeSim = ui('lifeSim'), simHud = ui('simHud');
+const profileScene = ui('profileScene');
 const logPanel = ui('logPanel'), eventList = ui('events');
 const taskHelp = ui('taskHelp');
 const taskHelpOpen = ui('taskHelpOpen');
 
 const S = {
-  age: '10-12', stage: 'questionnaire', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
-  questionnaire: { completed: false, answers: {} },
+  age: '10-12', stage: 'creator', started: 0, events: [], evidence: { planning: 0, problem: 0, regulation: 0 },
+  avatar: { created: false, name: 'nova', skin: 'warm', hair: 'wave', outfit: 'explorer', extra: 'none', trait: 'planner', turn: 0 },
+  sim: { minute: 510, energy: 4, bond: 1, project: 4, choices: [], episode: null },
+  profileAnswers: {},
   observations: { planning: {}, problem: {}, regulation: {} },
   player: { x: 1, y: 1 }, map: [], collected: 0, moves: 0,
   circuitRotations: 0, memoryErrors: 0, memoryRound: 0,
@@ -38,32 +42,44 @@ const observationNames = {
   regulation:{loadControl:'контроль под нагрузкой',ruleSwitch:'смена правила',goalReturn:'возврат к цели'}
 };
 const PILOT_CRITERIA={firstRunRoutes:1,planEfficiency:.8,productiveSearch:.22,nonproductiveRepeat:.55};
-const SURVEY_QUESTIONS=[
-  {id:'q1',icon:'✨',title:'Чем тебе интереснее всего заниматься?',rule:'Выбери до трёх вариантов',max:3,exclusive:[10],options:[
-    ['🧩','Конструировать и собирать модели'],['🎨','Рисовать, придумывать дизайн и украшать'],['🧠','Решать загадки, головоломки и задачки'],['🔬','Проводить опыты и узнавать, как всё устроено'],['🎮','Создавать игры, работать с компьютером или программировать'],['📖','Придумывать истории, персонажей и сюжеты'],['🛠️','Мастерить вещи своими руками'],['♟️','Придумывать стратегии и планировать действия'],['⚽','Танцевать, двигаться и заниматься спортом'],['🎤','Общаться, выступать и придумывать что-то вместе с другими'],['🌈','Пока не знаю — хочу попробовать разное']
+const AVATAR_SECTIONS={
+  identity:{title:'Выбери имя героя',icon:'✦',key:'name',options:[['nova','Нова','✦'],['lumi','Луми','☀'],['kai','Кай','⚡'],['mira','Мира','☾'],['ray','Рэй','◆'],['theo','Тео','◉']]},
+  face:{title:'Выбери оттенок кожи',icon:'☺',key:'skin',options:[['light','Светлый','#f5d2b6'],['warm','Тёплый','#dca172'],['gold','Золотистый','#b9784e'],['deep','Тёмный','#71462f']]},
+  hair:{title:'Собери причёску',icon:'✂',key:'hair',options:[['short','Короткая','✦'],['wave','Волны','〰'],['curls','Кудри','●'],['spikes','Шипы','▲']]},
+  outfit:{title:'Выбери образ',icon:'◆',key:'outfit',options:[['explorer','Исследователь','#37d9dd'],['creator','Творец','#ff699f'],['tech','Техно','#9a7cff'],['sport','Движение','#75df83']]},
+  extra:{title:'Добавь деталь',icon:'★',key:'extra',options:[['none','Без детали','—'],['glasses','Очки','⌐'],['headphones','Наушники','◖◗'],['badge','Значок','★']]},
+  trait:{title:'Что герой любит делать?',icon:'☼',key:'trait',options:[['planner','Продумывать','🗺'],['maker','Создавать','🛠'],['explorer','Исследовать','🔎'],['helper','Помогать','♥']]}
+};
+const PROFILE_QUESTION_ORDER=['q1','q7','q2','q4','q6','q5','q3','q8'];
+const PROFILE_QUESTIONS={
+  q1:{index:1,theme:'backpack',chapter:'СБОРЫ В ДОРОГУ',icon:'🎒',prop:'🎒',title:'Чем тебе интереснее заниматься?',prompt:'Положи в рюкзак до 3 интересов',mode:'multi',max:3,options:[
+    ['build','🧩','Собирать и конструировать'],['visual','🎨','Рисовать и создавать дизайн'],['logic','🧠','Решать загадки и задачки'],['science','🔬','Проводить опыты'],['code','🎮','Создавать игры и программы'],['stories','📚','Придумывать истории и героев'],['craft','🛠','Мастерить своими руками'],['strategy','♟','Придумывать стратегии'],['movement','⚽','Спорт, танцы и движение'],['social','🎭','Общаться и выступать'],['variety','✨','Хочу попробовать разное',true]
   ]},
-  {id:'q2',icon:'⏳',title:'Если бы у тебя появилось свободное время, что бы ты скорее выбрал?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
-    ['🧱','Собрать что-нибудь новое'],['🎨','Придумать рисунок, поделку или собственный проект'],['🔎','Разобраться в интересном вопросе или загадке'],['🎮','Поиграть в игру или придумать свою'],['🧪','Провести опыт и проверить догадку'],['👥','Позвать друзей и сделать что-нибудь вместе'],['🌤️','Пока не знаю — зависит от настроения']
+  q7:{index:2,theme:'badges',chapter:'ЗНАЧКИ ОПЫТА',icon:'🏅',prop:'🏅',title:'Что ты уже пробовал?',prompt:'Отметь реальные занятия, а не умения героя',mode:'multi',options:[
+    ['robotics','🤖','Робототехника и конструирование'],['art','🎨','Рисование, дизайн или рукоделие'],['programming','💻','Программирование или создание игр'],['science_club','🧪','Научные кружки и опыты'],['logic_club','♟','Шахматы и головоломки'],['stage','🎤','Музыка, танцы или театр'],['sport','⚽','Спорт'],['other','✦','Другие занятия'],['none','○','Пока ни на какие кружки не хожу',true],['unknown','?','Не помню или трудно ответить',true]
   ]},
-  {id:'q3',icon:'🚀',title:'Что тебе хотелось бы попробовать, даже если ты ещё никогда этим не занимался?',rule:'Выбери до двух вариантов',max:2,exclusive:[8],options:[
-    ['🤖','Создать собственного робота'],['🎲','Придумать настольную или компьютерную игру'],['🏗️','Построить необычную конструкцию'],['🎬','Создать мультфильм или комикс'],['🔬','Проводить научные эксперименты'],['💻','Научиться программировать'],['🛠️','Сделать полезную вещь своими руками'],['🎭','Попробовать спорт, танцы или сценическое выступление'],['🌈','Пока не знаю — хочу посмотреть разные варианты']
+  q2:{index:3,theme:'city',chapter:'СВОБОДНЫЙ ЧАС',icon:'◷',prop:'🗺',title:'Куда пойдём до следующей миссии?',prompt:'Выбери то, чем занялся бы ты',mode:'single',options:[
+    ['assemble','🧩','Собрать что-нибудь новое'],['create','🎨','Придумать рисунок или проект'],['investigate','🔎','Разобраться в загадке'],['game','🎮','Поиграть или придумать игру'],['experiment','🧪','Провести опыт'],['friends','👥','Позвать друзей и делать вместе'],['mood','✨','Зависит от настроения',true]
   ]},
-  {id:'q4',icon:'🧭',title:'Какой способ занятий тебе больше нравится?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
-    ['💡','Придумывать и создавать что-то своё'],['🧱','Собирать или делать по понятной инструкции'],['🧪','Экспериментировать и проверять разные идеи'],['🧠','Решать задания и искать ответы'],['👥','Работать вместе с другими ребятами'],['🛤️','Пробовать разные способы — без заранее известного ответа'],['🌈','Пока не знаю — хочу попробовать разные способы']
+  q4:{index:4,theme:'workshop',chapter:'ПЛАН ДЕЙСТВИЙ',icon:'🛠',prop:'🧰',title:'Как тебе нравится выполнять задания?',prompt:'Выбери один способ',mode:'single',options:[
+    ['own','✦','Придумывать что-то своё'],['instruction','📋','Делать по понятной инструкции'],['experiment','🧪','Проверять разные идеи'],['solve','🧠','Решать и искать ответы'],['team','👥','Работать вместе'],['open','🧭','Искать путь без готового ответа'],['unsure','?','Хочу попробовать разные способы',true]
   ]},
-  {id:'q5',icon:'🏁',title:'Что тебе приятнее в конце занятия?',rule:'Выбери один вариант',max:1,exclusive:[6],options:[
-    ['🛠️','Получить готовую вещь, которую я сделал'],['💡','Показать собственную идею или проект'],['✨','Узнать что-то новое и удивительное'],['🧠','Разобраться с трудной задачей'],['🤝','Сделать что-то вместе с командой'],['📈','Увидеть, что у меня получилось лучше, чем раньше'],['🌤️','Пока не знаю — зависит от занятия']
+  q6:{index:5,theme:'storm',chapter:'ЧТО МЕШАЕТ',icon:'☁',prop:'⚠',title:'Что тебе меньше нравится на занятиях?',prompt:'Выбери до 2 вариантов',mode:'multi',max:2,options:[
+    ['repeat','↻','Долго повторять одно и то же'],['listen','👂','Только слушать и ничего не делать'],['copy','📎','Всегда делать строго по образцу'],['alone','🧍','Работать одному'],['present','🎤','Выступать перед всеми'],['easy','○','Слишком простое задание'],['hard','▲','Слишком сложное задание'],['unknown','?','Пока не знаю',true]
   ]},
-  {id:'q6',icon:'🙅',title:'Что тебе обычно меньше нравится на занятиях?',rule:'Выбери не больше двух вариантов',max:2,exclusive:[7],options:[
-    ['🔁','Долго повторять одно и то же'],['🎧','Только слушать объяснения, почти ничего не делая'],['📋','Всегда делать строго по образцу, ничего не меняя'],['🧍','Работать одному, когда можно работать с другими'],['🎤','Когда нужно выступать перед всеми'],['😴','Когда задание слишком простое'],['⛰️','Когда задание слишком сложное'],['🌈','Пока не знаю — ещё не разобрался(лась), что мне не нравится']
+  q5:{index:6,theme:'stage',chapter:'НАГРАДА ЗА МИССИЮ',icon:'🏆',prop:'🎁',title:'Что приятнее получить в конце занятия?',prompt:'Выбери одну награду',mode:'single',options:[
+    ['thing','🛠','Готовую вещь, которую сделал'],['project','✦','Собственный проект или идею'],['discovery','🔬','Новое открытие'],['hard_task','🧠','Решённую трудную задачу'],['team_result','👥','Общий результат команды'],['growth','📈','Увидеть свой прогресс'],['depends','?','Зависит от занятия',true]
   ]},
-  {id:'q7',icon:'🎒',title:'Есть ли занятия, которыми ты уже занимаешься или занимался раньше?',rule:'Можно выбрать несколько вариантов',max:null,exclusive:[8,9],options:[
-    ['🤖','Робототехника или конструирование'],['🎨','Рисование, дизайн или рукоделие'],['💻','Программирование или создание игр'],['🔬','Научные кружки и эксперименты'],['♟️','Шахматы, логические игры или головоломки'],['🎭','Музыка, танцы, театр или вокал'],['⚽','Спорт'],['✨','Другие занятия'],['🌱','Пока ни на какие кружки не хожу'],['❔','Не помню / трудно ответить']
+  q3:{index:7,theme:'portals',chapter:'ПОРТАЛЫ НОВЫХ ДЕЛ',icon:'◉',prop:'🌀',title:'Что хотелось бы попробовать?',prompt:'Открой до 2 порталов',mode:'multi',max:2,options:[
+    ['robot','🤖','Создать собственного робота'],['game','🎮','Придумать игру'],['construction','🏗','Построить конструкцию'],['animation','🎬','Создать мультфильм или комикс'],['science','🔬','Проводить эксперименты'],['code','💻','Научиться программировать'],['craft','🛠','Сделать полезную вещь'],['performance','⚽','Попробовать спорт, танцы или сцену'],['variety','✨','Посмотреть разные варианты',true]
   ]},
-  {id:'q8',icon:'🌟',title:'Чего бы тебе хотелось от нового кружка?',rule:'Выбери до двух вариантов',max:2,exclusive:[7],options:[
-    ['🧠','Научиться тому, чего я ещё не умею'],['🛠️','Создавать собственные проекты'],['🔥','Найти занятие, которое действительно увлекает'],['👥','Познакомиться с ребятами с похожими интересами'],['🏆','Подготовиться к соревнованию или выступлению'],['🧭','Попробовать новое и понять, нравится ли мне это'],['❤️','Продолжить заниматься тем, что я уже люблю'],['🌈','Пока не знаю — хочу сначала посмотреть варианты']
+  q8:{index:8,theme:'festival',chapter:'СЛЕДУЮЩАЯ ГЛАВА',icon:'🎆',prop:'🚩',title:'Чего хочется от нового кружка?',prompt:'Выбери до 2 целей',mode:'multi',max:2,options:[
+    ['learn','📚','Научиться новому'],['projects','✦','Создавать свои проекты'],['interest','♥','Найти увлекающее занятие'],['friends','👥','Познакомиться с ребятами'],['competition','🏆','Подготовиться к соревнованию'],['try','🧭','Попробовать и понять, нравится ли'],['continue','🌱','Продолжить любимое занятие'],['unknown','?','Сначала посмотреть варианты',true]
   ]}
-];
+};
+const AVATAR_SKINS={light:'#f5d2b6',warm:'#dca172',gold:'#b9784e',deep:'#71462f'};
+const AVATAR_HAIR_COLORS={short:'#27324f',wave:'#6a3d2b',curls:'#2a1e2c',spikes:'#1c3853'};
+const AVATAR_OUTFITS={explorer:['#37d9dd','#0c7085'],creator:['#ff699f','#8f315a'],tech:['#9a7cff','#4e3d9f'],sport:['#75df83','#28784a']};
 const AGE_PROFILES={
   '7-9':{
     label:'РАЗВЕДКА',brief:'2 простых маршрута · 2 сигнала · 4 ворот',commandLimit:12,tutorialTarget:2,memoryPace:620,memoryErrorLimit:2,chaseHitLimit:3,
@@ -107,15 +123,15 @@ const AGE_PROFILES={
 };
 const ageProfile=()=>AGE_PROFILES[S.age];
 const TASK_BRIEFS={
-  tutorial:{glyph:'🧒  ⚡  ⚡  ◉',text:'Собери ⚡. Потом иди к ◉',tip:'Двигайся стрелками',demo:'<span class="demo-runner">🧒</span><i>⚡</i><i>⚡</i><b>◉</b>'},
+  tutorial:{glyph:'🏠  ⚡  ⚡  🛠',text:'Собери батареи по дороге в мастерскую',tip:'Двигайся стрелками к 🛠',demo:'<span class="demo-runner">🧒</span><i>⚡</i><i>⚡</i><b>🛠</b>'},
   planner:{glyph:'🤖  →  ⚡  →  🚪',text:'Нажми стрелки. Потом нажми ▶',tip:'Сначала составь весь маршрут',demo:'<span>🤖</span><i class="demo-key">▲</i><i class="demo-key">▶</i><i class="demo-key">▶</i><b>⚡</b><em>🚪</em>'},
-  circuit:{glyph:'⚡  →  🐾',text:'Нажимай на линии — они поворачиваются',tip:'Соедини свет от ⚡ до 🐾',demo:'<b>⚡</b><i class="demo-pipe">└</i><i class="demo-pipe delay">─</i><i class="demo-pipe delay-2">┐</i><em>🐾</em>'},
+  circuit:{glyph:'⚡  →  🎆',text:'Поверни линии и включи свет на площади',tip:'Соедини один путь от ⚡ до 🎆',demo:'<b>⚡</b><i class="demo-pipe">└</i><i class="demo-pipe delay">─</i><i class="demo-pipe delay-2">┐</i><em>🎆</em>'},
   memory:{glyph:'👁️  →  👆',text:'Смотри. Потом нажми так же',tip:'Во время показа только запоминай',demo:'<i class="demo-pad cyan"></i><i class="demo-pad pink"></i><i class="demo-pad yellow"></i><b class="demo-hand">👆</b>'},
   adapt:{glyph:'ЦВЕТ СВЕРХУ  →  ВОРОТА',text:'Иди в ворота цвета сверху',tip:'Внимание: цвет может измениться',demo:'<b class="demo-rule">🔵 ✓</b><span>🧒</span><i class="demo-door blue"></i><i class="demo-door pink"></i>'},
   chase:{glyph:'🧒  →  🐾',text:'Веди героя слева внизу к 🐾 справа вверху',tip:'Не касайся ✦. После столкновения продолжай',demo:'<span class="demo-runner">🧒</span><i class="demo-glitch">✦</i><i class="demo-glitch delay">✦</i><b>🐾</b>'}
 };
 let currentTask=null;
-function setStage(stage){S.stage=stage;document.body.dataset.stage=stage;const hints={tutorial:'Собери ⚡ и найди ◉',chase:'🧒 слева → 🐾 справа',adapt:'Выбери верхние или нижние ворота'};if(ui('controlsHint'))ui('controlsHint').textContent=hints[stage]||'Двигай героя';}
+function setStage(stage){S.stage=stage;document.body.dataset.stage=stage;const hints={tutorial:'Иди в мастерскую 🛠',chase:'Найди Бита 🐾',adapt:'Проведи технику через ворота'};if(ui('controlsHint'))ui('controlsHint').textContent=hints[stage]||'Двигай героя';}
 function announceTask(key,repeated=false){const task=TASK_BRIEFS[key];currentTask=key;S.taskPaused=true;ui('taskHelpGlyph').textContent=task.glyph;ui('taskHelpDemo').innerHTML=task.demo;ui('taskHelpText').textContent=task.text;ui('taskHelpTip').textContent=task.tip;taskHelpOpen.classList.add('hidden');taskHelp.classList.remove('hidden');track('task_instruction_shown',{task:key,text:task.text,repeated});}
 ui('taskHelpStart').onclick=()=>{taskHelp.classList.add('hidden');taskHelpOpen.classList.remove('hidden');S.taskPaused=false;track('task_instruction_closed',{task:currentTask});};
 taskHelpOpen.onclick=()=>{if(currentTask)announceTask(currentTask,true);};
@@ -141,7 +157,7 @@ function renderEvidence(){
 }
 function toast(text,ms=850){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),ms); }
 function stageUI(n,name,icon,text){ ui('stageName').textContent=name; ui('stageDots').textContent='●'.repeat(n)+'○'.repeat(6-n); missionCard.classList.remove('hidden'); ui('missionIcon').textContent=icon; ui('missionText').textContent=text; }
-function hideOverlays(){ [questionnaire,intro,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
+function hideOverlays(){ [creator,intro,lifeSim,profileScene,cutscene,plannerPuzzle,circuitPuzzle,memoryPuzzle,result,taskHelp,taskHelpOpen].forEach(x=>x.classList.add('hidden'));S.taskPaused=false; }
 
 const storyAssetUrls=[
   'assets/scene-forest-v2.webp','assets/scene-ruins-v2.webp','assets/scene-reactor-v2.webp','assets/scene-crystals-v2.webp','assets/scene-gates-v2.webp','assets/scene-storm-v2.webp',
@@ -154,15 +170,21 @@ function warmStoryAssets(){
   storyAssetUrls.forEach(src=>{const image=new Image();image.decoding='async';image.src=src;storyPreloads.push(image);});
 }
 if('requestIdleCallback' in window)requestIdleCallback(warmStoryAssets,{timeout:1800});else setTimeout(warmStoryAssets,400);
-const actorMarkup=scene=>`<img class="story-nova" src="${scene.pose}" decoding="async" alt=""><img class="story-bit" src="assets/bit-character.webp" decoding="async" alt="">`;
+const avatarOption=(section,value)=>AVATAR_SECTIONS[section].options.find(option=>option[0]===value);
+const avatarName=()=>avatarOption('identity',S.avatar.name)?.[1]||'Нова';
+function avatarMarkup(extraClass=''){
+  const [shirt,accent]=AVATAR_OUTFITS[S.avatar.outfit],skin=AVATAR_SKINS[S.avatar.skin],hair=AVATAR_HAIR_COLORS[S.avatar.hair];
+  return `<div class="sim-avatar ${extraClass}" data-hair="${S.avatar.hair}" data-extra="${S.avatar.extra}" style="--skin:${skin};--hair:${hair};--shirt:${shirt};--accent:${accent};--turn:${S.avatar.turn}deg"><i class="sim-shadow"></i><i class="sim-leg left"></i><i class="sim-leg right"></i><i class="sim-shoe left"></i><i class="sim-shoe right"></i><i class="sim-body"></i><i class="sim-arm left"></i><i class="sim-arm right"></i><i class="sim-neck"></i><i class="sim-head"><b class="sim-hair"></b><b class="sim-eye left"></b><b class="sim-eye right"></b><b class="sim-mouth"></b><b class="sim-extra"></b></i><i class="sim-badge">✦</i></div>`;
+}
+const actorMarkup=scene=>`${avatarMarkup('story-avatar')}<img class="story-bit" src="assets/bit-character.webp" decoding="async" alt="">`;
 const storyScenes={
-  prologue:{chapter:'ПРОЛОГ',title:'Сигнал погас',text:'Компас дрогнул в тёмном лесу.',glyphs:'🧭  ·  ✦  ·  ?',pose:'assets/nova-character.webp',action:'Поймать сигнал',icon:'✦',dialogue:'Коснись искры — пусть компас запомнит направление.',after:'Луч ведёт через руины. Бит ещё на связи!',event:'<div class="story-prop signal-spark">✦<i></i><i></i></div><div class="story-prop compass-ray"></div>'},
-  beacon:{chapter:'ГЛАВА I',title:'Дорога над пропастью',text:'Старая платформа ещё может летать.',glyphs:'◉  ·  ⚡  ·  ⛰',pose:'assets/nova-running-v2.webp',action:'Запустить дрон',icon:'▶',dialogue:'Разбуди платформу одним импульсом.',after:'Дрон поднялся и показал путь к башне.',event:'<div class="story-prop scene-drone">◉<i></i></div><div class="story-prop flight-trail"></div>'},
-  reactor:{chapter:'ГЛАВА II',title:'Башня без света',text:'Энергия остановилась в проводах.',glyphs:'⚡  ·  ⌁  ·  ◉',pose:'assets/nova-powering-v2.webp',action:'Дать импульс',icon:'⚡',dialogue:'Коснись ядра — энергия побежит вверх.',after:'Башня ожила. Вдали ответили кристаллы.',event:'<div class="story-prop energy-pulse">⚡</div><div class="story-prop tower-flare"><i></i><i></i><i></i></div>'},
-  echo:{chapter:'ГЛАВА III',title:'Каньон отвечает',text:'Свет Бита спрятался в кристаллах.',glyphs:'◆  ◇  ◆  ◇',pose:'assets/nova-listening-v2.webp',action:'Разбудить эхо',icon:'◆',dialogue:'Коснись кристалла и смотри, как свет идёт дальше.',after:'Цветная волна указала проход к воротам.',event:'<div class="story-prop crystal-echo"><i>◆</i><i>◆</i><i>◆</i><i>◆</i></div>'},
-  gates:{chapter:'ГЛАВА IV',title:'Проход меняет правило',text:'Ворота не держат один цвет.',glyphs:'●  ⇄  ●',pose:'assets/nova-running-v2.webp',action:'Сменить цвет',icon:'⇄',dialogue:'Нажми, когда створки вспыхнут другим цветом.',after:'Створки разошлись. За ними уже слышна гроза.',event:'<div class="story-prop story-gate left"></div><div class="story-prop story-gate right"></div><div class="story-prop rule-orb">⇄</div>'},
-  storm:{chapter:'ГЛАВА V',title:'Сквозь грозу',text:'Сигнал Бита почти рядом.',glyphs:'⚡  ·  🧭  ·  🐾',pose:'assets/nova-running-v2.webp',action:'Удержать курс',icon:'🧭',dialogue:'Прижми компас — он прорежет помехи лучом.',after:'Молния отступила. В убежище кто-то ждёт.',event:'<div class="story-prop lightning l1"></div><div class="story-prop lightning l2"></div><div class="story-prop storm-shield"></div>'},
-  rescue:{chapter:'ЭПИЛОГ',title:'Бит найден',text:'Тёплый свет дрожит у самого дома.',glyphs:'🧭  ·  ♥  ·  ◉',pose:'assets/nova-reunion-v2.webp',action:'Позвать Бита',icon:'♥',dialogue:'Коснись сигнала — пусть Бит услышит Нову.',after:'Сигнал вернулся. Теперь домой — вместе.',event:'<div class="story-prop rescue-wave"><i></i><i></i><i></i></div><div class="story-prop heart-light">♥</div>'}
+  prologue:{chapter:'08:30 · ДОМ',title:'День фестиваля',text:'Площадь Нова-Сити всё ещё тёмная.',glyphs:'🏠  ·  🛠  ·  🎆',pose:'assets/nova-character.webp',action:'Открыть сообщение',icon:'✦',dialogue:'Бит прислал срочное сообщение. До открытия шесть часов.',after:'Сегодня вы отвечаете за главное световое шоу города.',event:'<div class="story-prop signal-spark">✦<i></i><i></i></div><div class="story-prop compass-ray"></div>'},
+  beacon:{chapter:'09:20 · МАСТЕРСКАЯ',title:'Нужны батареи',text:'Без них проект не включится.',glyphs:'🤖  ·  ⚡  ·  🛠',pose:'assets/nova-running-v2.webp',action:'Включить дрона',icon:'▶',dialogue:'Дрон доставит батареи, если задать ему маршрут.',after:'Маршрут открыт. Можно собирать установку.',event:'<div class="story-prop scene-drone">◉<i></i></div><div class="story-prop flight-trail"></div>'},
+  reactor:{chapter:'10:30 · ПЛОЩАДЬ',title:'Свет не проходит',text:'Одна из цепей собрана неверно.',glyphs:'⚡  ·  ⌁  ·  🎆',pose:'assets/nova-powering-v2.webp',action:'Проверить питание',icon:'⚡',dialogue:'Поверни участки цепи и проведи только один непрерывный путь.',after:'Первая часть площади загорелась. Проект оживает.',event:'<div class="story-prop energy-pulse">⚡</div><div class="story-prop tower-flare"><i></i><i></i><i></i></div>'},
+  echo:{chapter:'12:00 · СЦЕНА',title:'Репетиция шоу',text:'Пульт отвечает цветными сигналами.',glyphs:'◆  ◇  ◆  ◇',pose:'assets/nova-listening-v2.webp',action:'Начать репетицию',icon:'◆',dialogue:'Запомни ритм света — вечером город увидит его целиком.',after:'Световой рисунок сохранён. До открытия всё меньше времени.',event:'<div class="story-prop crystal-echo"><i>◆</i><i>◆</i><i>◆</i><i>◆</i></div>'},
+  gates:{chapter:'13:10 · ПЛОЩАДЬ',title:'Шторм меняет план',text:'Безопасный проход постоянно меняется.',glyphs:'●  ⇄  ●',pose:'assets/nova-running-v2.webp',action:'Обновить правило',icon:'⇄',dialogue:'Следи за новым цветом и проводи оборудование через нужные ворота.',after:'Оборудование спасено. Но Бита рядом больше нет.',event:'<div class="story-prop story-gate left"></div><div class="story-prop story-gate right"></div><div class="story-prop rule-orb">⇄</div>'},
+  storm:{chapter:'14:00 · УЛИЦЫ',title:'Где Бит?',text:'На карте движутся помехи.',glyphs:'⚡  ·  🧭  ·  🐾',pose:'assets/nova-running-v2.webp',action:'Открыть карту',icon:'🧭',dialogue:'Доберись до сигнала. После ошибки путь можно продолжить.',after:'Сигнал найден — Бит застрял у старого павильона.',event:'<div class="story-prop lightning l1"></div><div class="story-prop lightning l2"></div><div class="story-prop storm-shield"></div>'},
+  rescue:{chapter:'15:00 · ФЕСТИВАЛЬ',title:'Свет включён',text:'Площадь встречает первых гостей.',glyphs:'🎆  ·  ♥  ·  ◉',pose:'assets/nova-reunion-v2.webp',action:'Запустить шоу',icon:'♥',dialogue:'Остался последний шаг — включить проект вместе с Битом.',after:'Нова-Сити сияет. Финал этого дня создали ваши решения.',event:'<div class="story-prop rescue-wave"><i></i><i></i><i></i></div><div class="story-prop heart-light">♥</div>'}
 };
 let storyNext=null,storyTimer=null;
 function showCutscene(id,next){
@@ -180,48 +202,116 @@ function continueStory(){
 }
 ui('sceneAction').onclick=resolveCutscene;ui('sceneContinue').onclick=continueStory;ui('sceneSkip').onclick=continueStory;
 
+const SIM_EPISODES={
+  morning:{location:'home',place:'ДОМ · УТРО',speaker:'БИТ',reaction:'☀',title:'До открытия 6 часов',text:'Главный световой проект не готов. С чего начнёте день?',choices:[
+    {id:'open_plan',trait:'planner',icon:'🗺',label:'Открыть план',hint:'сначала увидеть весь день',outcome:'Вы отметили мастерскую, площадь и время открытия.',effects:{project:5}},
+    {id:'pack_tools',trait:'maker',icon:'🛠',label:'Взять инструменты',hint:'начать с действия',outcome:'Инструменты собраны. Можно сразу идти в город.',effects:{energy:0,project:3}},
+    {id:'split_work',trait:'helper',icon:'♥',label:'Делать вместе',hint:'разделить работу с Битом',outcome:'Бит берёт карту, а герой — набор для ремонта.',effects:{bond:1,project:3}}
+  ]},
+  workshop:{location:'workshop',place:'МАСТЕРСКАЯ · 09:20',speaker:'БИТ',reaction:'⚡',title:'Дрон не знает путь',text:'Нужно доставить батарею на площадь. Как начнёте?',choices:[
+    {id:'route_first',trait:'planner',icon:'→',label:'Весь маршрут',hint:'собрать команды до запуска',outcome:'На панели появился полный маршрут для проверки.',effects:{project:4}},
+    {id:'small_test',trait:'maker',icon:'▶',label:'Пробный запуск',hint:'проверять по шагам',outcome:'Дрон готов к короткой проверке, но время идёт.',effects:{energy:-1,project:2}},
+    {id:'inspect_map',trait:'explorer',icon:'🔎',label:'Осмотреть карту',hint:'найти препятствия',outcome:'На карте отмечены стены, батарея и выход.',effects:{project:3}}
+  ]},
+  storm:{location:'square',place:'ПЛОЩАДЬ · 11:45',speaker:'ГОРОД',reaction:'☁',title:'Приближается шторм',text:'Свет уже работает, но шоу ещё не настроено. Что важнее сейчас?',choices:[
+    {id:'rehearse_now',trait:'maker',icon:'🎛',label:'Репетировать',hint:'закрепить световой рисунок',outcome:'Команда включает пульт до того, как усилится ветер.',effects:{minutes:15,energy:-1,project:6}},
+    {id:'check_safety',trait:'planner',icon:'✓',label:'Проверить площадь',hint:'подготовиться к изменению',outcome:'Вы замечаете ворота, которые придётся переключать.',effects:{minutes:15,project:4}},
+    {id:'check_bit',trait:'helper',icon:'♥',label:'Проверить Бита',hint:'не потерять напарника',outcome:'Бит обещает держаться рядом во время репетиции.',effects:{minutes:15,bond:1,project:2}}
+  ]},
+  search:{location:'storm',place:'УЛИЦЫ · 14:00',speaker:'СИСТЕМА',reaction:'!',title:'Сигнал Бита пропал',text:'На карте помехи. Как будете искать?',choices:[
+    {id:'follow_clues',trait:'explorer',icon:'🐾',label:'По следам',hint:'смотреть, где был Бит',outcome:'След ведёт к старому павильону через площадь.',effects:{project:2,bond:1}},
+    {id:'short_route',trait:'planner',icon:'🧭',label:'Короткий путь',hint:'сначала выбрать маршрут',outcome:'На карте отмечена ближайшая точка сигнала.',effects:{project:3}},
+    {id:'call_city',trait:'helper',icon:'📣',label:'Позвать город',hint:'использовать помощь',outcome:'Фонари показывают направление слабого сигнала.',effects:{bond:1}}
+  ]}
+};
+let lifeNext=null;
+const formatSimTime=()=>`${String(Math.floor(S.sim.minute/60)).padStart(2,'0')}:${String(S.sim.minute%60).padStart(2,'0')}`;
+function updateSimHud(){
+  ui('simTime').textContent=formatSimTime();ui('simEnergy').textContent=`${S.sim.energy}/4`;
+  ui('simBondBar').style.width=`${Math.min(100,S.sim.bond*20)}%`;ui('simProjectBar').style.width=`${Math.min(100,S.sim.project)}%`;
+}
+function changeSimulation(effects={},reason='story'){
+  S.sim.energy=Math.max(0,Math.min(4,S.sim.energy+(effects.energy||0)));S.sim.bond=Math.max(0,Math.min(5,S.sim.bond+(effects.bond||0)));S.sim.project=Math.max(0,Math.min(100,S.sim.project+(effects.project||0)));S.sim.minute=Math.min(23*60+59,S.sim.minute+(effects.minutes||0));updateSimHud();track('simulation_state_changed',{reason,effects,state:{...S.sim,choices:[...S.sim.choices]}});
+}
+function showLifeEpisode(id,next){
+  const episode=SIM_EPISODES[id];hideOverlays();missionCard.classList.add('hidden');setStage('life');S.sim.episode=id;lifeNext=next;lifeSim.dataset.location=episode.location;
+  ui('lifeAvatar').innerHTML=avatarMarkup('life-sim-avatar');ui('lifeLocation').textContent=episode.place;ui('lifeClock').textContent=formatSimTime();ui('lifeSpeaker').textContent=episode.speaker;ui('lifeTitle').textContent=episode.title;ui('lifeText').textContent=episode.text;ui('lifeReaction').textContent=episode.reaction;
+  ui('lifeOutcome').classList.add('hidden');ui('lifeChoices').classList.remove('hidden');ui('lifeChoices').innerHTML=episode.choices.map(choice=>`<button type="button" data-life-choice="${choice.id}" class="${choice.trait===S.avatar.trait?'hero-style':''}"><i>${choice.icon}</i><b>${choice.label}</b><span>${choice.hint}</span>${choice.trait===S.avatar.trait?'<em>мой стиль</em>':''}</button>`).join('');
+  ui('lifeChoices').querySelectorAll('[data-life-choice]').forEach(button=>button.onclick=()=>chooseLifeOption(id,button.dataset.lifeChoice));lifeSim.classList.remove('hidden');ui('stageName').textContent=episode.place;ui('stageDots').textContent='';track('simulation_episode_started',{episode:id,state:{...S.sim}});
+}
+function chooseLifeOption(episodeId,choiceId){
+  const episode=SIM_EPISODES[episodeId],choice=episode.choices.find(item=>item.id===choiceId);if(!choice)return;
+  S.sim.choices.push({episode:episodeId,choice:choiceId,declaredTrait:S.avatar.trait});changeSimulation(choice.effects,`choice:${choiceId}`);ui('lifeChoices').classList.add('hidden');ui('lifeOutcomeTitle').textContent=choice.label;ui('lifeOutcomeText').textContent=choice.outcome;
+  const changes=[];if(choice.effects.project)changes.push(`✦ проект +${choice.effects.project}`);if(choice.effects.bond)changes.push(`♥ Бит +${choice.effects.bond}`);if(choice.effects.energy)changes.push(`⚡ энергия ${choice.effects.energy}`);ui('lifeChanges').innerHTML=changes.map(change=>`<span>${change}</span>`).join('')||'<span>◷ решение сохранено</span>';ui('lifeOutcome').classList.remove('hidden');ui('lifeReaction').textContent=choice.icon;track('simulation_choice',{episode:episodeId,choice:choiceId,declaredTrait:S.avatar.trait,effects:choice.effects,interpretation:'declared_preference_not_competency'});beep(700,.12);
+}
+ui('lifeContinue').onclick=()=>{if(!lifeNext)return;const next=lifeNext,episode=S.sim.episode;lifeNext=null;track('simulation_episode_completed',{episode,state:{...S.sim}});next();};
+
+let profileQueue=[],profileNext=null,activeProfileQuestion=null;
+const profileQuestion=id=>PROFILE_QUESTIONS[id];
+const profileOption=(question,id)=>question.options.find(option=>option[0]===id);
+const profileAnswerLabels=id=>(S.profileAnswers[id]||[]).map(value=>profileOption(profileQuestion(id),value)?.[2]).filter(Boolean);
+function showProfileSequence(ids,next){profileQueue=[...ids];profileNext=next;showNextProfileQuestion();}
+function showNextProfileQuestion(){
+  if(!profileQueue.length){const next=profileNext;profileNext=null;activeProfileQuestion=null;profileScene.classList.add('hidden');if(next)next();return;}
+  const id=profileQueue.shift(),question=profileQuestion(id);activeProfileQuestion=id;hideOverlays();missionCard.classList.add('hidden');setStage('profile');profileScene.dataset.theme=question.theme;
+  ui('profileHero').innerHTML=avatarMarkup('profile-avatar');ui('profileProp').textContent=question.prop;ui('profileChapter').textContent=question.chapter;ui('profileProgress').textContent=`${question.index} / ${PROFILE_QUESTION_ORDER.length}`;ui('profileIcon').textContent=question.icon;ui('profileTitle').textContent=question.title;ui('profilePrompt').textContent=question.prompt;ui('stageName').textContent=question.chapter;ui('stageDots').textContent='';
+  renderProfileQuestion();profileScene.classList.remove('hidden');track('interest_question_shown',{question:id,index:question.index,source:'child_self_report',interpretation:'self_report_not_competency'});
+}
+function renderProfileQuestion(message=''){
+  const question=profileQuestion(activeProfileQuestion),selected=S.profileAnswers[activeProfileQuestion]||[];
+  ui('profileOptions').innerHTML=question.options.map(([id,icon,label])=>`<button type="button" data-profile-option="${id}" class="${selected.includes(id)?'selected':''}" aria-pressed="${selected.includes(id)}"><span>${icon}</span><b>${label}</b><i>✓</i></button>`).join('');
+  ui('profileOptions').querySelectorAll('[data-profile-option]').forEach(button=>button.onclick=()=>chooseProfileOption(button.dataset.profileOption));
+  const status=message||(selected.length?(question.mode==='multi'&&question.max?`Выбрано ${selected.length} из ${question.max}`:`Выбрано: ${selected.length}`):question.prompt);
+  ui('profileMessage').textContent=status;ui('profileContinue').disabled=!selected.length;
+}
+function chooseProfileOption(optionId){
+  const question=profileQuestion(activeProfileQuestion),option=profileOption(question,optionId);if(!option)return;let selected=[...(S.profileAnswers[activeProfileQuestion]||[])];const exclusive=Boolean(option[3]);
+  if(question.mode==='single')selected=[optionId];
+  else if(selected.includes(optionId))selected=selected.filter(id=>id!==optionId);
+  else if(exclusive)selected=[optionId];
+  else{selected=selected.filter(id=>!profileOption(question,id)?.[3]);if(question.max&&selected.length>=question.max){beep(160,.06);renderProfileQuestion(`Можно выбрать не больше ${question.max}`);return;}selected.push(optionId);}
+  S.profileAnswers[activeProfileQuestion]=selected;track('interest_option_changed',{question:activeProfileQuestion,option:optionId,selected:selected.includes(optionId),count:selected.length,source:'child_self_report'},null,0);renderProfileQuestion();beep(520+selected.length*45,.05);
+}
+ui('profileContinue').onclick=()=>{
+  if(!activeProfileQuestion||(S.profileAnswers[activeProfileQuestion]||[]).length===0)return;const question=profileQuestion(activeProfileQuestion),answers=[...S.profileAnswers[activeProfileQuestion]];
+  track('interest_answer_saved',{question:activeProfileQuestion,index:question.index,answers,labels:profileAnswerLabels(activeProfileQuestion),source:'child_self_report',interpretation:'self_report_not_competency'},null,0);beep(820,.1);showNextProfileQuestion();
+};
+
 let audio;
 function beep(freq=440,d=.08){ try{ audio ||= new AudioContext(); const o=audio.createOscillator(),g=audio.createGain(); o.frequency.value=freq; o.type='sine'; g.gain.setValueAtTime(.05,audio.currentTime); g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d); o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime+d); }catch{} }
 
 function updateAgeIntro(){const profile=ageProfile();ui('ageBrief').innerHTML=`<b>${profile.label}</b><span>${profile.brief}</span>`;}
 document.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{ document.querySelectorAll('[data-age]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); S.age=b.dataset.age; updateAgeIntro(); });
 updateAgeIntro();
-let surveyIndex=-1;
-const surveyAnswerCodes=()=>Object.fromEntries(SURVEY_QUESTIONS.map(q=>[q.id,(S.questionnaire.answers[q.id]||[]).map(index=>`${q.id}_o${index+1}`)]));
-function surveyLabels(questionId){const question=SURVEY_QUESTIONS.find(q=>q.id===questionId);return (S.questionnaire.answers[questionId]||[]).map(index=>question.options[index][1]);}
-function renderSurveyQuestion(){
-  const question=SURVEY_QUESTIONS[surveyIndex],selected=S.questionnaire.answers[question.id]||[];
-  ui('surveyProgress').textContent=`${surveyIndex+1} / ${SURVEY_QUESTIONS.length}`;ui('surveyIcon').textContent=question.icon;ui('surveyTitle').textContent=question.title;ui('surveyRule').textContent=question.rule;ui('surveyMessage').textContent='';
-  ui('surveyOptions').classList.toggle('survey-options-wide',question.options.length>8);
-  ui('surveyOptions').innerHTML=question.options.map(([emoji,label],index)=>`<button type="button" data-survey-option="${index}" aria-pressed="${selected.includes(index)}" class="${selected.includes(index)?'selected':''}"><span>${emoji}</span><b>${label}</b><i>✓</i></button>`).join('');
-  ui('surveyNext').disabled=selected.length===0;ui('surveyNext').textContent=surveyIndex===SURVEY_QUESTIONS.length-1?'Готово ✓':'Дальше →';
-  ui('surveyOptions').querySelectorAll('[data-survey-option]').forEach(button=>button.onclick=()=>toggleSurveyOption(Number(button.dataset.surveyOption)));
+let creatorTab='identity';
+const avatarTelemetry=()=>({name:S.avatar.name,skin:S.avatar.skin,hair:S.avatar.hair,outfit:S.avatar.outfit,extra:S.avatar.extra,declaredTrait:S.avatar.trait});
+function refreshAvatar(){
+  ui('avatarPreview').innerHTML=avatarMarkup('creator-avatar');ui('introAvatar').innerHTML=avatarMarkup('intro-sim-avatar');ui('heroCallsign').textContent=avatarName().toUpperCase();
 }
-function toggleSurveyOption(index){
-  const question=SURVEY_QUESTIONS[surveyIndex];let selected=[...(S.questionnaire.answers[question.id]||[])];const selectedAt=selected.indexOf(index);
-  if(selectedAt>=0)selected.splice(selectedAt,1);
-  else if(question.max===1)selected=[index];
-  else if(question.exclusive.includes(index))selected=[index];
-  else{
-    selected=selected.filter(item=>!question.exclusive.includes(item));
-    if(question.max&&selected.length>=question.max){ui('surveyMessage').textContent=`Можно выбрать не больше ${question.max}`;return;}
-    selected.push(index);
-  }
-  S.questionnaire.answers[question.id]=selected;renderSurveyQuestion();beep(420+index*12,.04);
+function renderCreator(){
+  const section=AVATAR_SECTIONS[creatorTab],sectionIndex=Object.keys(AVATAR_SECTIONS).indexOf(creatorTab)+1;
+  document.querySelectorAll('[data-creator-tab]').forEach(button=>button.classList.toggle('active',button.dataset.creatorTab===creatorTab));
+  ui('creatorSectionIcon').textContent=section.icon;ui('creatorSectionTitle').textContent=section.title;ui('creatorSectionStep').textContent=`${sectionIndex} / ${Object.keys(AVATAR_SECTIONS).length}`;
+  ui('creatorChoices').innerHTML=section.options.map(([value,label,visual])=>`<button type="button" data-avatar-value="${value}" class="${S.avatar[section.key]===value?'selected':''}" aria-pressed="${S.avatar[section.key]===value}"><i style="${visual.startsWith('#')?`--choice:${visual}`:''}">${visual.startsWith('#')?'':visual}</i><b>${label}</b><span>✓</span></button>`).join('');
+  ui('creatorChoices').querySelectorAll('[data-avatar-value]').forEach(button=>button.onclick=()=>{S.avatar[section.key]=button.dataset.avatarValue;refreshAvatar();renderCreator();beep(430+Math.random()*80,.04);});
+  refreshAvatar();
 }
-ui('surveyStart').onclick=()=>{surveyIndex=0;ui('surveyWelcome').classList.add('hidden');ui('surveyQuestion').classList.remove('hidden');renderSurveyQuestion();};
-ui('surveyBack').onclick=()=>{if(surveyIndex===0){surveyIndex=-1;ui('surveyQuestion').classList.add('hidden');ui('surveyWelcome').classList.remove('hidden');ui('surveyProgress').textContent='СТАРТ';return;}surveyIndex--;renderSurveyQuestion();};
-ui('surveyNext').onclick=()=>{const question=SURVEY_QUESTIONS[surveyIndex];if(!(S.questionnaire.answers[question.id]||[]).length)return;if(surveyIndex<SURVEY_QUESTIONS.length-1){surveyIndex++;renderSurveyQuestion();return;}S.questionnaire.completed=true;ui('surveyQuestion').classList.add('hidden');ui('surveyDone').classList.remove('hidden');ui('surveyProgress').textContent='ГОТОВО';beep(860,.16);};
-ui('surveyToGame').onclick=()=>{questionnaire.classList.add('hidden');intro.classList.remove('hidden');setStage('intro');ui('stageName').textContent='МИССИЯ';};
-ui('play').onclick=()=>{ warmStoryAssets();document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620); resetMetrics(); showCutscene('prologue',startTutorial); };
-ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='МИССИЯ'; ui('stageDots').textContent=''; setStage('intro');document.body.classList.remove('game-active','portrait-ok'); };
+document.querySelectorAll('[data-creator-tab]').forEach(button=>button.onclick=()=>{creatorTab=button.dataset.creatorTab;renderCreator();beep(520,.04);});
+ui('randomizeHero').onclick=()=>{Object.entries(AVATAR_SECTIONS).forEach(([key,section])=>{const option=section.options[Math.floor(Math.random()*section.options.length)];S.avatar[section.key]=option[0];});S.avatar.turn=0;renderCreator();beep(760,.12);};
+ui('turnLeft').onclick=()=>{S.avatar.turn=Math.max(-18,S.avatar.turn-9);refreshAvatar();};
+ui('turnRight').onclick=()=>{S.avatar.turn=Math.min(18,S.avatar.turn+9);refreshAvatar();};
+ui('createHero').onclick=()=>{S.avatar.created=true;refreshAvatar();creator.classList.add('hidden');intro.classList.remove('hidden');setStage('intro');ui('stageName').textContent='НОВА-СИТИ';beep(880,.16);};
+ui('editHero').onclick=()=>{intro.classList.add('hidden');creator.classList.remove('hidden');setStage('creator');renderCreator();};
+renderCreator();
+ui('play').onclick=()=>{ warmStoryAssets();document.body.classList.add('game-active');document.body.classList.remove('portrait-ok');beep(620);resetMetrics();showProfileSequence(['q1','q7'],()=>showLifeEpisode('morning',startTutorial)); };
+ui('again').onclick=()=>{ result.classList.add('hidden'); intro.classList.remove('hidden');simHud.classList.add('hidden');missionCard.classList.add('hidden'); ui('stageName').textContent='НОВА-СИТИ'; ui('stageDots').textContent=''; setStage('intro');document.body.classList.remove('game-active','portrait-ok'); };
 ui('rotateDismiss').onclick=()=>document.body.classList.add('portrait-ok');
 ui('logToggle').onclick=()=>logPanel.classList.toggle('open'); ui('logClose').onclick=()=>logPanel.classList.remove('open'); ui('openLogs').onclick=()=>logPanel.classList.add('open');
 
-function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},collected:0,moves:0,circuitRotations:0,memoryErrors:0,memoryRound:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7},taskPaused:false}); eventList.innerHTML=''; renderEvidence(); track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'evidence-model-v9-questionnaire',criteria:'pilot_predefined_not_age_norms'});track('interest_questionnaire_completed',{answers:surveyAnswerCodes(),questionCount:SURVEY_QUESTIONS.length}); }
+function resetMetrics(){ Object.assign(S,{started:performance.now(),events:[],evidence:{planning:0,problem:0,regulation:0},observations:{planning:{},problem:{},regulation:{}},profileAnswers:{},sim:{minute:510,energy:4,bond:1,project:4,choices:[],episode:null},collected:0,moves:0,circuitRotations:0,memoryErrors:0,memoryRound:0,adaptGate:0,adaptErrors:0,rule:'blue',switchPending:false,switchResults:[],chaseHits:0,recovering:false,chaseStart:{x:1,y:7},taskPaused:false}); eventList.innerHTML=''; renderEvidence();updateSimHud();simHud.classList.remove('hidden');track('diagnostic_started',{age:S.age,ageProfile:ageProfile().label,version:'story-simulation-v3-interest-interludes',criteria:'pilot_predefined_not_age_norms'});track('avatar_created',{avatar:avatarTelemetry(),interpretation:'appearance_and_trait_are_declared_choices_not_competency'}); }
 
 function loadMap(rows){ S.map=rows.map(r=>r.split('')); for(let y=0;y<S.map.length;y++)for(let x=0;x<S.map[y].length;x++)if(S.map[y][x]==='P'){S.player={x,y};S.chaseStart={x,y};S.map[y][x]='.';} }
-function startTutorial(){ const profile=ageProfile();hideOverlays(); setStage('tutorial'); S.collected=0; S.moves=0; loadMap(profile.tutorialMap); stageUI(1,'ПОЙМАЙ СИГНАЛ','⚡',`0 / ${profile.tutorialTarget}`); track('tutorial_started',{age:S.age,target:profile.tutorialTarget,mapVersion:profile.label});announceTask('tutorial'); }
+function startTutorial(){ const profile=ageProfile();hideOverlays(); setStage('tutorial'); S.collected=0; S.moves=0; loadMap(profile.tutorialMap); stageUI(1,'ДОРОГА В МАСТЕРСКУЮ','⚡',`0 / ${profile.tutorialTarget}`); track('tutorial_started',{age:S.age,target:profile.tutorialTarget,mapVersion:profile.label,storyGoal:'reach_workshop_with_batteries'});announceTask('tutorial'); }
 
 function move(dx,dy){
   if(S.taskPaused||!['tutorial','chase'].includes(S.stage)) return;
@@ -232,8 +322,8 @@ function move(dx,dy){
 }
 function tutorialCell(cell,x,y){
   const target=ageProfile().tutorialTarget;
-  if(cell==='C'){ S.map[y][x]='.'; S.collected++; beep(720+S.collected*80); stageUI(1,'ПОЙМАЙ СИГНАЛ','⚡',`${S.collected} / ${target}`); track('signal_collected',{index:S.collected,target,moves:S.moves}); }
-  if(cell==='E'){ if(S.collected===target){ track('tutorial_completed',{moves:S.moves,target}); beep(980,.15); showCutscene('beacon',startPlanner); } else { toast(`⚡ ${S.collected}/${target}`); beep(180); } }
+  if(cell==='C'){ S.map[y][x]='.'; S.collected++; beep(720+S.collected*80); stageUI(1,'ДОРОГА В МАСТЕРСКУЮ','⚡',`${S.collected} / ${target}`); track('battery_collected',{index:S.collected,target,moves:S.moves}); }
+  if(cell==='E'){ if(S.collected===target){ track('tutorial_completed',{moves:S.moves,target});changeSimulation({minutes:50,energy:-1,project:7},'reached_workshop');beep(980,.15);showProfileSequence(['q2'],()=>showLifeEpisode('workshop',startPlanner)); } else { toast(`⚡ ${S.collected}/${target}`); beep(180); } }
 }
 
 const commandDelta={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0]},commandIcon={U:'▲',D:'▼',L:'◀',R:'▶'};
@@ -241,7 +331,7 @@ let planRound=0,planQueue=[],planRobot={x:0,y:0},planStart={x:0,y:0},planCheckpo
 function summarizeRouteEfficiency(trials){const totalOptimal=trials.reduce((sum,trial)=>sum+trial.optimal,0),totalExecuted=trials.reduce((sum,trial)=>sum+trial.executedLength,0);return{totalOptimal,totalExecuted,routeEfficiency:Math.min(1,totalOptimal/Math.max(1,totalExecuted))};}
 
 function startPlanner(){
-  hideOverlays();setStage('planner');plannerPuzzle.classList.remove('hidden');missionCard.classList.add('hidden');ui('stageName').textContent='ЗАПРОГРАММИРУЙ ДРОНА';ui('stageDots').textContent='●●○○○○';planRound=0;planTrials=[];planningSummary=null;
+  hideOverlays();setStage('planner');plannerPuzzle.classList.remove('hidden');missionCard.classList.add('hidden');ui('stageName').textContent='ДОСТАВКА ДЛЯ ПРОЕКТА';ui('stageDots').textContent='';planRound=0;planTrials=[];planningSummary=null;
   document.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>addPlanCommand(b.dataset.command));ui('programUndo').onclick=undoPlanCommand;ui('programRun').onclick=runPlanProgram;
   beginPlanRound();track('planning_task_started',{age:S.age,rounds:ageProfile().planLevels.length,commandLimit:ageProfile().commandLimit,rule:'program_before_launch'});announceTask('planner');
 }
@@ -277,7 +367,7 @@ async function runPlanProgram(){
   observation('planning','completePlan',firstRunCount>=PILOT_CRITERIA.firstRunRoutes,{firstRunCount,trials:levels.length,age:S.age,criterion:PILOT_CRITERIA.firstRunRoutes,criterionStatus:'pilot_predefined'});
   observation('planning','planEfficiency',routeEfficiency>=PILOT_CRITERIA.planEfficiency,{measured:+routeEfficiency.toFixed(2),minimumPath:totalOptimal,childPath:totalExecuted,formula:'minimum_path/child_path',criterion:PILOT_CRITERIA.planEfficiency,criterionStatus:'pilot_predefined'});
   observation('problem','adaptiveRevision',retryTrials.length?retryTrials.some(t=>t.revisionImproved):null,{sourceTask:'drone',opportunities:retryTrials.length,reason:retryTrials.length?'feedback_used':'not_needed'});
-  setTimeout(()=>showCutscene('reactor',startCircuit),850);
+  changeSimulation({minutes:70,energy:-1,project:18},'batteries_delivered');setTimeout(()=>showProfileSequence(['q4'],()=>showCutscene('reactor',startCircuit)),850);
 }
 
 const solutionMasks=[6,6,12,10,9,3,3,10,9];
@@ -287,7 +377,7 @@ function rotateMask(mask,times){let m=mask;for(let i=0;i<times;i++)m=((m<<1)&15)
 function pipeChar(m){return({10:'─',5:'│',6:'┌',12:'┐',9:'┘',3:'└'}[m]||'•');}
 function circuitSignature(){return rotations.map(value=>value%4).join('');}
 function isNonproductiveStateRepeat(history,signature,connected){const previousBest=history.get(signature);history.set(signature,Math.max(previousBest??-1,connected));return previousBest!==undefined&&connected<=previousBest;}
-function startCircuit(){ const rounds=ageProfile().circuitStarts.length;hideOverlays();setStage('circuit'); circuitPuzzle.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='ЗАЖГИ МАЯК'; ui('stageDots').textContent='●●●○○○'; circuitRound=0;circuitTrials=[];problemSummary=null;beginCircuitRound();ui('circuitHint').onclick=showCircuitHint;track('circuit_started',{age:S.age,goal:'connect_source_to_target',rounds});announceTask('circuit'); }
+function startCircuit(){ const rounds=ageProfile().circuitStarts.length;hideOverlays();setStage('circuit'); circuitPuzzle.classList.remove('hidden'); missionCard.classList.add('hidden'); ui('stageName').textContent='СВЕТ НА ПЛОЩАДИ'; ui('stageDots').textContent=''; circuitRound=0;circuitTrials=[];problemSummary=null;beginCircuitRound();ui('circuitHint').onclick=showCircuitHint;track('circuit_started',{age:S.age,goal:'restore_festival_power',rounds});announceTask('circuit'); }
 function beginCircuitRound(){const starts=ageProfile().circuitStarts;rotations=[...starts[circuitRound]];circuitHintUsed=false;circuitDone=false;S.circuitRotations=0;productiveActions=0;nonproductiveRepeats=0;seenCircuitStates=new Map();const initial=circuitState();lastConnected=initial.powered.size;isNonproductiveStateRepeat(seenCircuitStates,circuitSignature(),lastConnected);ui('circuitRound').textContent=`${circuitRound+1}/${starts.length}`;renderCircuit();track('circuit_round_started',{age:S.age,round:circuitRound+1,initialConnected:lastConnected});}
 function renderCircuit(){
   const state=circuitState();
@@ -307,7 +397,7 @@ function circuitState(){
 }
 function showCircuitHint(){circuitHintUsed=true;const path=[3,4,1,2,5];const i=path.find(n=>rotateMask(solutionMasks[n],rotations[n])!==solutionMasks[n])??3;const tile=ui('circuitGrid').querySelector(`[data-tile="${i}"]`);tile?.classList.add('hinted');track('hint_requested',{round:circuitRound+1,tile:i,rotations:S.circuitRotations});toast('👆 ↻');}
 function finishCircuit(){
-  if(circuitDone)return;circuitDone=true;renderCircuit();toast('⚡  ИСКРА ДОШЛА ДО ЛАП  🐾',CIRCUIT_SUCCESS_HOLD_MS);
+  if(circuitDone)return;circuitDone=true;renderCircuit();toast('⚡  ПЛОЩАДЬ ЗАГОРЕЛАСЬ  🎆',CIRCUIT_SUCCESS_HOLD_MS);
   const trial={rotations:S.circuitRotations,productiveActions,nonproductiveRepeats,nonproductiveRepeatRatio:S.circuitRotations?nonproductiveRepeats/S.circuitRotations:0,hintUsed:circuitHintUsed,productiveRatio:S.circuitRotations?productiveActions/S.circuitRotations:0};
   circuitTrials.push(trial);track('circuit_solved',{round:circuitRound+1,...trial},'problem',0);beep(1000,.22);
   if(circuitRound<ageProfile().circuitStarts.length-1){circuitRound++;setTimeout(beginCircuitRound,CIRCUIT_SUCCESS_HOLD_MS);return;}
@@ -317,22 +407,22 @@ function finishCircuit(){
   observation('problem','productiveSearch',avgProductive>=PILOT_CRITERIA.productiveSearch,{measured:+avgProductive.toFixed(2),formula:'productive_actions/all_rotations',criterion:PILOT_CRITERIA.productiveSearch,criterionStatus:'pilot_predefined'});
   observation('problem','lowRepetition',repeatRatio<=PILOT_CRITERIA.nonproductiveRepeat,{measured:+repeatRatio.toFixed(2),repeatedStates:totalNonproductiveRepeats,formula:'revisited_whole_board_states_without_progress/all_rotations',criterion:PILOT_CRITERIA.nonproductiveRepeat,criterionStatus:'pilot_predefined'});
   observation('problem','transfer',transferObserved,{round1:circuitTrials[0],round2:circuitTrials[1],criterionStatus:'pilot_predefined'});
-  setTimeout(()=>showCutscene('echo',startMemory),CIRCUIT_SUCCESS_HOLD_MS);
+  changeSimulation({minutes:75,energy:-1,project:24},'square_power_restored');setTimeout(()=>showProfileSequence(['q6'],()=>showLifeEpisode('storm',()=>showCutscene('echo',startMemory))),CIRCUIT_SUCCESS_HOLD_MS);
 }
 
 const MEMORY_ERROR_PAUSE_SECONDS=3;
 let sequence=[],input=[],showing=false,memoryPlaybackToken=0;
 function setMemoryInputEnabled(enabled){ui('pads').classList.toggle('input-locked',!enabled);document.querySelectorAll('[data-pad]').forEach(button=>button.disabled=!enabled);}
-function startMemory(){ hideOverlays();setStage('memory'); memoryPuzzle.classList.remove('hidden'); ui('stageName').textContent='ЭХО БИТА'; ui('stageDots').textContent='●●●●○○'; ui('roundMarks').textContent='○ ○'; ui('memoryHint').textContent='👁️'; ui('memoryStart').classList.remove('hidden'); ui('memoryFeedback').classList.add('hidden'); S.memoryRound=0; showing=false;memoryPlaybackToken++;setMemoryInputEnabled(false);bindPads(); track('memory_started');announceTask('memory'); }
+function startMemory(){ hideOverlays();setStage('memory'); memoryPuzzle.classList.remove('hidden'); ui('stageName').textContent='РЕПЕТИЦИЯ СВЕТОВОГО ШОУ'; ui('stageDots').textContent=''; ui('roundMarks').textContent='○ ○'; ui('memoryHint').textContent='👁️'; ui('memoryStart').classList.remove('hidden'); ui('memoryFeedback').classList.add('hidden'); S.memoryRound=0; showing=false;memoryPlaybackToken++;setMemoryInputEnabled(false);bindPads(); track('memory_started',{storyGoal:'save_light_sequence'});announceTask('memory'); }
 function bindPads(){ document.querySelectorAll('[data-pad]').forEach(b=>b.onclick=()=>padInput(+b.dataset.pad)); ui('memoryStart').onclick=beginMemoryRound; }
 function beginMemoryRound(){ const profile=ageProfile();sequence=profile.memorySets[S.memoryRound]; input=[]; ui('memoryStart').classList.add('hidden'); track('memory_round_started',{age:S.age,round:S.memoryRound+1,length:sequence.length,paceMs:profile.memoryPace});const token=++memoryPlaybackToken;showSequence(token); }
 async function showSequence(token=memoryPlaybackToken){ showing=true;setMemoryInputEnabled(false);ui('memoryFeedback').classList.add('hidden');ui('memoryHint').textContent='👁️'; await wait(350);if(token!==memoryPlaybackToken||S.stage!=='memory')return; for(const p of sequence){ flashPad(p); await wait(ageProfile().memoryPace);if(token!==memoryPlaybackToken||S.stage!=='memory')return; } showing=false;setMemoryInputEnabled(true);ui('memoryHint').textContent='👆'; }
 function flashPad(i){ const b=document.querySelector(`[data-pad="${i}"]`); b.classList.add('flash'); beep([420,520,620,720][i]); setTimeout(()=>b.classList.remove('flash'),260); }
 async function replayAfterMemoryError(){const token=++memoryPlaybackToken;showing=true;setMemoryInputEnabled(false);ui('memoryHint').textContent='✕';ui('memoryFeedback').classList.remove('hidden');for(let seconds=MEMORY_ERROR_PAUSE_SECONDS;seconds>0;seconds--){ui('memoryFeedbackText').textContent=`Пауза. Повтор через ${seconds}…`;await wait(1000);if(token!==memoryPlaybackToken||S.stage!=='memory')return;}ui('memoryFeedback').classList.add('hidden');await showSequence(token);}
-function padInput(i){ if(S.taskPaused||showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); input=[];replayAfterMemoryError();return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++;setMemoryInputEnabled(false); ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit,criterionStatus:'pilot_predefined_not_age_norm'});beep(980,.2);setTimeout(()=>showCutscene('gates',startAdapt),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
+function padInput(i){ if(S.taskPaused||showing||ui('memoryStart').classList.contains('hidden')===false)return; flashPad(i); input.push(i); const at=input.length-1; if(input[at]!==sequence[at]){ S.memoryErrors++; track('pattern_error',{age:S.age,round:S.memoryRound+1,position:at+1},'regulation',0); input=[];replayAfterMemoryError();return; } if(input.length===sequence.length){ const rounds=ageProfile().memorySets.length;track('pattern_completed',{age:S.age,round:S.memoryRound+1,length:sequence.length,errors:S.memoryErrors},'regulation',0); S.memoryRound++;setMemoryInputEnabled(false); ui('roundMarks').textContent=S.memoryRound===1?'● ○':'● ●'; if(S.memoryRound===rounds){observation('regulation','loadControl',S.memoryErrors<=ageProfile().memoryErrorLimit,{age:S.age,errors:S.memoryErrors,limit:ageProfile().memoryErrorLimit,criterionStatus:'pilot_predefined_not_age_norm'});changeSimulation({minutes:70,project:15},'show_rehearsed');beep(980,.2);setTimeout(()=>showProfileSequence(['q5'],()=>showCutscene('gates',startAdapt)),650);}else{ui('memoryStart').classList.remove('hidden');ui('memoryHint').textContent='▶';} } }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function startAdapt(){ const profile=ageProfile();hideOverlays(); setStage('adapt'); S.adaptGate=0; S.adaptErrors=0; S.rule='blue'; S.switchPending=false; S.switchResults=[]; stageUI(5,'ВОРОТА БУРИ','🔵',`0 / ${profile.adaptDoors.length}`); track('adaptation_started',{age:S.age,rule:'blue',gates:profile.adaptDoors.length,switches:profile.adaptSwitches.length});announceTask('adapt'); }
+function startAdapt(){ const profile=ageProfile();hideOverlays(); setStage('adapt'); S.adaptGate=0; S.adaptErrors=0; S.rule='blue'; S.switchPending=false; S.switchResults=[]; stageUI(5,'ЭВАКУАЦИЯ ОБОРУДОВАНИЯ','🔵',`0 / ${profile.adaptDoors.length}`); track('adaptation_started',{age:S.age,rule:'blue',gates:profile.adaptDoors.length,switches:profile.adaptSwitches.length,storyGoal:'move_equipment_to_safety'});announceTask('adapt'); }
 function adaptChoice(lane){
   const profile=ageProfile();if(S.taskPaused||S.adaptGate>=profile.adaptDoors.length)return;const colors=profile.adaptDoors[S.adaptGate]; const chosen=colors[lane];
   if(S.switchPending){S.switchResults.push(chosen===S.rule);S.switchPending=false;}
@@ -340,14 +430,14 @@ function adaptChoice(lane){
     track('gate_choice',{gate:S.adaptGate+1,color:chosen,correct:true},'regulation',0); S.adaptGate++; beep(740);
     stageUI(5,'ВОРОТА БУРИ',S.rule==='blue'?'🔵':'🩷',`${S.adaptGate} / ${profile.adaptDoors.length}`);
     if(profile.adaptSwitches.includes(S.adaptGate)){const old=S.rule;S.rule=S.rule==='blue'?'pink':'blue';S.switchPending=true;stageUI(5,'ПРАВИЛО ИЗМЕНИЛОСЬ',S.rule==='blue'?'🔵':'🩷',`${S.adaptGate} / ${profile.adaptDoors.length}`);track('rule_changed',{age:S.age,from:old,to:S.rule,afterGate:S.adaptGate});toast(old==='blue'?'🔵 ×    🩷 ✓':'🩷 ×    🔵 ✓',1200);}
-    if(S.adaptGate===profile.adaptDoors.length){const expected=profile.adaptSwitches.length;observation('regulation','ruleSwitch',S.switchResults.length===expected&&S.switchResults.every(Boolean),{age:S.age,expectedSwitches:expected,firstChoices:S.switchResults,errors:S.adaptErrors,criterionStatus:'pilot_predefined_not_age_norm'});track('adaptation_completed',{age:S.age,errors:S.adaptErrors,switchResults:S.switchResults},'regulation',0);setTimeout(()=>showCutscene('storm',startChase),450);}
+    if(S.adaptGate===profile.adaptDoors.length){const expected=profile.adaptSwitches.length;observation('regulation','ruleSwitch',S.switchResults.length===expected&&S.switchResults.every(Boolean),{age:S.age,expectedSwitches:expected,firstChoices:S.switchResults,errors:S.adaptErrors,criterionStatus:'pilot_predefined_not_age_norm'});track('adaptation_completed',{age:S.age,errors:S.adaptErrors,switchResults:S.switchResults},'regulation',0);changeSimulation({minutes:50,project:10},'equipment_saved');setTimeout(()=>showProfileSequence(['q3'],()=>showLifeEpisode('search',()=>showCutscene('storm',startChase))),450);}
   }
   else { S.adaptErrors++; track('old_rule_error',{gate:S.adaptGate+1,color:chosen,activeRule:S.rule},'regulation',0); beep(120); toast('×'); }
 }
 
 let glitches=[];
 function goalReturnObservation(hits,resumed,limit){return hits>0?resumed===hits&&hits<=limit:null;}
-function startChase(){ const profile=ageProfile();setStage('chase'); loadMap(profile.chaseMap); glitches=profile.glitches.map(g=>({...g})); S.chaseHits=0;S.resumedAfterFailure=0;S.recovering=false; stageUI(6,'СКВОЗЬ ШТОРМ','🐾',`${glitches.length} ✦`); track('chase_started',{age:S.age,glitches:glitches.length,hitLimit:profile.chaseHitLimit});announceTask('chase');setTimeout(()=>toast('🧒 слева внизу  →  🐾 справа вверху',1800),250); }
+function startChase(){ const profile=ageProfile();setStage('chase'); loadMap(profile.chaseMap); glitches=profile.glitches.map(g=>({...g})); S.chaseHits=0;S.resumedAfterFailure=0;S.recovering=false; stageUI(6,'ПОИСК БИТА','🐾',`${glitches.length} помехи`); track('chase_started',{age:S.age,glitches:glitches.length,hitLimit:profile.chaseHitLimit,storyGoal:'find_bit'});announceTask('chase');setTimeout(()=>toast('🧒 слева внизу  →  🐾 справа вверху',1800),250); }
 function chaseStep(){
   glitches.forEach(g=>{const nx=g.x+g.d;if(nx<=1||nx>=14||S.map[g.y][nx]==='#')g.d*=-1;else g.x=nx;});
   const hit=glitches.some(g=>g.x===S.player.x&&g.y===S.player.y);
@@ -356,20 +446,23 @@ function chaseStep(){
   if(S.map[S.player.y][S.player.x]==='E'){
     const hadRecoveryOpportunity=S.chaseHits>0;
     observation('regulation','goalReturn',goalReturnObservation(S.chaseHits,S.resumedAfterFailure,ageProfile().chaseHitLimit),{age:S.age,hits:S.chaseHits,resumed:S.resumedAfterFailure,opportunity:hadRecoveryOpportunity,limit:ageProfile().chaseHitLimit,reason:hadRecoveryOpportunity?'measured':'no_collision',criterionStatus:'pilot_predefined_not_age_norm'});
-    track('pet_rescued',{age:S.age,moves:S.moves,hits:S.chaseHits,resumed:S.resumedAfterFailure},'regulation',0);showCutscene('rescue',finishGame);
+    track('pet_rescued',{age:S.age,moves:S.moves,hits:S.chaseHits,resumed:S.resumedAfterFailure},'regulation',0);changeSimulation({minutes:60,energy:-1,bond:1,project:12},'bit_found');showProfileSequence(['q8'],()=>showCutscene('rescue',finishGame));
   }
 }
 
 function finishGame(){
-  setStage('result');document.body.classList.remove('game-active','portrait-ok');missionCard.classList.add('hidden');taskHelpOpen.classList.add('hidden'); result.classList.remove('hidden');
+  setStage('result');document.body.classList.remove('game-active','portrait-ok');simHud.classList.add('hidden');missionCard.classList.add('hidden');taskHelpOpen.classList.add('hidden'); result.classList.remove('hidden');
   const plan=evidenceCount('planning'),problem=evidenceCount('problem'),reg=evidenceCount('regulation');
   const planObserved=evidenceObserved('planning'),problemObserved=evidenceObserved('problem'),regObserved=evidenceObserved('regulation'),planTotal=Object.keys(observationNames.planning).length,problemTotal=Object.keys(observationNames.problem).length,regTotal=Object.keys(observationNames.regulation).length,totalObserved=planObserved+problemObserved+regObserved,totalIndicators=planTotal+problemTotal+regTotal;
   ui('planScore').textContent=`Измерено ${planObserved} из ${planTotal}`;ui('problemScore').textContent=`Измерено ${problemObserved} из ${problemTotal}`;ui('regScore').textContent=`Измерено ${regObserved} из ${regTotal}`;
   const unavailable=[];
   if(S.observations.problem.adaptiveRevision===null)unavailable.push('исправление программы — повторный запуск не потребовался');
   if(S.observations.regulation.goalReturn===null)unavailable.push('возврат к цели — столкновения не было');
-  ui('resultStory').textContent=`Измерено ${totalObserved} из ${totalIndicators} поведенческих показателей.${unavailable.length?` Не оценивались: ${unavailable.join('; ')}.`:''} Это описание действий в заданиях для возраста ${S.age}, а не оценка личности.`;
-  ui('surveySummary').innerHTML=`<b>Стартовая анкета</b><span><strong>Интересы:</strong> ${surveyLabels('q1').join(' · ')}</span><span><strong>Формат:</strong> ${surveyLabels('q4').join(' · ')}</span><span><strong>Ожидания:</strong> ${surveyLabels('q8').join(' · ')}</span>`;
+  const storyEnding=S.sim.bond>=4?'Финал «Команда города»':S.sim.project>=95?'Финал «Мастер света»':'Финал «Проект спасён»';
+  ui('resultStory').textContent=`${storyEnding}. Измерено ${totalObserved} из ${totalIndicators} поведенческих показателей.${unavailable.length?` Не оценивались: ${unavailable.join('; ')}.`:''} Это описание действий в заданиях для возраста ${S.age}, а не оценка личности.`;
+  const traitLabel=avatarOption('trait',S.avatar.trait)?.[1]||'Исследовать';
+  ui('heroSummary').innerHTML=`<b>${storyEnding}</b><span><strong>${avatarName()}</strong> прожил день до ${formatSimTime()} · проект ${S.sim.project}% · отношения с Битом ${S.sim.bond}/5</span><span>В начале выбран стиль «${traitLabel}». Внешность, характер и сюжетные решения — игровые предпочтения ребёнка и не используются как оценка компетенций.</span>`;
+  ui('interestSummary').innerHTML=`<header><b>ВЫБОР РЕБЁНКА</b><span>ответы между миссиями · не оценка компетенций</span></header><div>${PROFILE_QUESTION_ORDER.map(id=>{const labels=profileAnswerLabels(id);return labels.length?`<article><b>${profileQuestion(id).title}</b><span>${labels.join(' · ')}</span></article>`:'';}).join('')}</div>`;
   const domains=[['planning','Планирование'],['problem','Решение проблем'],['regulation','Саморегуляция: контроль действий']];
   const displayLabel=(domain,key,label)=>{
     if(domain==='planning'&&planningSummary){if(key==='completePlan')return `полный план с первого запуска: ${planningSummary.firstRunCount}/${planningSummary.totalTrials}`;if(key==='planEfficiency')return `эффективность в 2 маршрутах дрона: ${Math.round(planningSummary.routeEfficiency*100)}% · минимальный путь ${planningSummary.totalOptimal}, путь ребёнка ${planningSummary.totalExecuted}`;}
@@ -378,20 +471,33 @@ function finishGame(){
     return label;
   };
   ui('reportDetails').innerHTML=domains.map(([domain,title])=>`<article><b>${title}</b>${Object.entries(observationNames[domain]).map(([key,label])=>{const value=S.observations[domain][key];return `<span class="${value===true?'yes':value===false?'no':''}">${value===true?'●':value===false?'○':'—'} ${displayLabel(domain,key,label)}</span>`}).join('')}</article>`).join('');
-  track('diagnostic_completed',{observations:S.observations,counts:{plan,problem,reg},observed:{plan:planObserved,problem:problemObserved,reg:regObserved},available:{plan:planTotal,problem:problemTotal,reg:regTotal},limits:'screening_not_diagnosis;pilot_criteria_not_age_norms'});beep(1040,.3);
+  track('diagnostic_completed',{observations:S.observations,profileAnswers:S.profileAnswers,counts:{plan,problem,reg},observed:{plan:planObserved,problem:problemObserved,reg:regObserved},available:{plan:planTotal,problem:problemTotal,reg:regTotal},simulation:{...S.sim},limits:'screening_not_diagnosis;pilot_criteria_not_age_norms;story_choices_and_self_report_are_not_competency'});beep(1040,.3);
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
 function rounded(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}}
 function drawBackdrop(){ const g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,'#18265d');g.addColorStop(.55,'#111938');g.addColorStop(1,'#090d1d');ctx.fillStyle=g;ctx.fillRect(0,0,960,540);ctx.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<38;i++)ctx.fillRect((i*137)%960,(i*71)%250,2,2); }
-function drawGridWorld(){ drawBackdrop(); const tw=60; for(let y=0;y<S.map.length;y++)for(let x=0;x<S.map[y].length;x++){const c=S.map[y][x],px=x*tw,py=y*tw;if(c==='#'){rounded(px+3,py+3,54,54,12,'#202944','#313b60');ctx.fillStyle='rgba(86,231,255,.08)';ctx.fillRect(px+12,py+12,8,8);}else{ctx.fillStyle='rgba(255,255,255,.018)';ctx.fillRect(px,py,60,60);} if(c==='C')drawToken(px+30,py+30,'⚡','#56e7ff'); if(c==='E')drawToken(px+30,py+30,S.stage==='chase'?'🐾':'◉',S.collected===ageProfile().tutorialTarget||S.stage==='chase'?'#91f28a':'#58617f'); }
+function drawGridWorld(){ drawBackdrop(); const tw=60; for(let y=0;y<S.map.length;y++)for(let x=0;x<S.map[y].length;x++){const c=S.map[y][x],px=x*tw,py=y*tw;if(c==='#'){rounded(px+3,py+3,54,54,12,'#202944','#313b60');ctx.fillStyle='rgba(86,231,255,.08)';ctx.fillRect(px+12,py+12,8,8);}else{ctx.fillStyle='rgba(255,255,255,.018)';ctx.fillRect(px,py,60,60);} if(c==='C')drawToken(px+30,py+30,'⚡','#56e7ff'); if(c==='E')drawToken(px+30,py+30,S.stage==='chase'?'🐾':'🛠',S.collected===ageProfile().tutorialTarget||S.stage==='chase'?'#91f28a':'#58617f'); }
   if(S.stage==='chase')glitches.forEach(g=>drawToken(g.x*60+30,g.y*60+30,'✦','#ff4f9a'));
   drawPlayer(S.player.x*60+30,S.player.y*60+30);
   if(S.stage==='chase'&&S.moves<4){const x=S.player.x*60+30,y=S.player.y*60+30,pulse=8+Math.sin(performance.now()/180)*4;ctx.save();ctx.strokeStyle='#56e7ff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,34+pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 18px sans-serif';ctx.textAlign='center';ctx.fillText('ТЫ',x,y-48);ctx.restore();}
   if(S.stage==='tutorial'&&S.moves<4){ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=4;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(S.player.x*60+55,S.player.y*60+30);ctx.lineTo(S.player.x*60+145,S.player.y*60+30);ctx.stroke();ctx.setLineDash([]);ctx.font='28px sans-serif';ctx.fillText('→',S.player.x*60+120,S.player.y*60+20);}
 }
 function drawToken(x,y,char,color){ctx.save();ctx.shadowColor=color;ctx.shadowBlur=18;rounded(x-22,y-22,44,44,14,'#11182d',color);ctx.shadowBlur=0;ctx.font='25px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(char,x,y+1);ctx.restore();}
-function drawPlayer(x,y){ctx.save();ctx.shadowColor='#56e7ff';ctx.shadowBlur=18;rounded(x-23,y-25,46,50,16,'#dffaff');ctx.shadowBlur=0;ctx.font='27px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🧒',x,y);ctx.restore();}
+function drawPlayer(x,y){
+  const skin=AVATAR_SKINS[S.avatar.skin],hair=AVATAR_HAIR_COLORS[S.avatar.hair],[shirt,accent]=AVATAR_OUTFITS[S.avatar.outfit];ctx.save();ctx.translate(x,y);ctx.shadowColor='#56e7ff';ctx.shadowBlur=15;
+  ctx.fillStyle='rgba(3,8,22,.35)';ctx.beginPath();ctx.ellipse(0,24,22,7,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle=accent;ctx.fillRect(-14,13,10,15);ctx.fillRect(4,13,10,15);ctx.fillStyle='#19233e';ctx.fillRect(-16,25,12,5);ctx.fillRect(4,25,12,5);
+  rounded(-21,-1,42,30,12,shirt,accent);ctx.fillStyle=skin;ctx.beginPath();ctx.arc(0,-14,16,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.2)';ctx.stroke();
+  ctx.fillStyle=hair;ctx.beginPath();ctx.arc(0,-18,17,Math.PI,Math.PI*2);ctx.lineTo(15,-11);ctx.quadraticCurveTo(4,-21,-15,-11);ctx.closePath();ctx.fill();
+  if(S.avatar.hair==='curls'){for(let i=-12;i<=12;i+=8){ctx.beginPath();ctx.arc(i,-26+Math.abs(i)/5,6,0,Math.PI*2);ctx.fill();}}
+  if(S.avatar.hair==='spikes'){ctx.beginPath();ctx.moveTo(-15,-22);ctx.lineTo(-8,-36);ctx.lineTo(-2,-25);ctx.lineTo(5,-38);ctx.lineTo(10,-24);ctx.lineTo(17,-31);ctx.lineTo(15,-15);ctx.closePath();ctx.fill();}
+  ctx.fillStyle='#17213a';ctx.beginPath();ctx.arc(-5,-14,1.7,0,Math.PI*2);ctx.arc(5,-14,1.7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8a4e4e';ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(0,-9,4,0,Math.PI);ctx.stroke();
+  if(S.avatar.extra==='glasses'){ctx.strokeStyle='#18213a';ctx.lineWidth=2;ctx.strokeRect(-11,-19,9,8);ctx.strokeRect(2,-19,9,8);ctx.beginPath();ctx.moveTo(-2,-15);ctx.lineTo(2,-15);ctx.stroke();}
+  if(S.avatar.extra==='headphones'){ctx.strokeStyle='#7ff1ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,-15,19,Math.PI,0);ctx.stroke();}
+  if(S.avatar.extra==='badge'){ctx.fillStyle='#fff4a8';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('★',10,9);}
+  ctx.restore();
+}
 function drawAdapt(){ const doors=ageProfile().adaptDoors;drawBackdrop(); ctx.fillStyle='#0d1126';ctx.fillRect(0,380,960,160);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(0,455,960,6); ctx.font='26px sans-serif';ctx.textAlign='center';ctx.fillText(S.rule==='blue'?'🔵 ✓   🩷 ×':'🔵 ×   🩷 ✓',480,74); for(let i=S.adaptGate;i<Math.min(S.adaptGate+3,doors.length);i++){const x=250+(i-S.adaptGate)*210;const cols=doors[i];drawDoor(x,145,cols[0]);drawDoor(x,320,cols[1]);} drawPlayer(120,270);ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(145,270);ctx.lineTo(230,190);ctx.moveTo(145,270);ctx.lineTo(230,365);ctx.stroke();ctx.font='34px sans-serif';ctx.fillText('▲',125,155);ctx.fillText('▼',125,390); }
 function drawDoor(x,y,color){const c=color==='blue'?'#36d7ff':'#ff4f9a';ctx.save();ctx.shadowColor=c;ctx.shadowBlur=24;rounded(x-45,y-62,90,124,20,'#11162a',c);ctx.fillStyle=c;ctx.globalAlpha=.7;ctx.fillRect(x-5,y-42,10,84);ctx.restore();}
 function loop(){ctx.clearRect(0,0,960,540);if(['tutorial','chase'].includes(S.stage))drawGridWorld();else if(S.stage==='adapt')drawAdapt();requestAnimationFrame(loop);}loop();

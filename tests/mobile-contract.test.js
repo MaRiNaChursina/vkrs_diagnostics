@@ -10,8 +10,8 @@ const js = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 for (const id of ['taskHelp','taskHelpGlyph','taskHelpDemo','taskHelpText','taskHelpTip','taskHelpStart','taskHelpOpen','rotateNotice','rotateDismiss']) {
   assert(html.includes(`id="${id}"`), `mobile UI contains #${id}`);
 }
-assert(html.includes('styles.css?v=s20-landscape-20261026'), 'responsive stylesheet cache is versioned');
-assert(html.includes('app.js?v=s20-landscape-20261026'), 'responsive script cache is versioned');
+assert(html.includes('styles.css?v=interest-interludes-20261121a'), 'responsive stylesheet cache is versioned');
+assert(html.includes('app.js?v=interest-interludes-20261121a'), 'responsive script cache is versioned');
 
 for (const task of ['tutorial','planner','circuit','memory','adapt','chase']) {
   assert(js.includes(`${task}:{glyph:`), `short instruction exists for ${task}`);
@@ -35,6 +35,9 @@ assert(html.includes('viewport-fit=cover'), 'phone safe areas are enabled');
 assert(js.includes('window.visualViewport'), 'visible Android browser height is measured');
 assert(js.includes("classList.toggle('short-landscape'"), 'very short landscape screens use compact mode');
 assert(css.includes('html.short-landscape .game-frame'), 'compact landscape frame follows the visible viewport');
+assert(css.includes('max-width:calc(100% - 205px)'), 'landscape maze reserves a separate touch-control rail');
+assert(css.includes('right:max(10px,env(safe-area-inset-right))'), 'landscape controls stay to the right of the hero');
+assert(css.includes('body[data-stage="tutorial"] .task-help-open'), 'maze help button is moved away from mobile movement controls');
 for (const visual of ['demo-runner','demo-key','demo-pipe','demo-pad','demo-rule','demo-glitch']) {
   assert(js.includes(visual) && css.includes(visual), `visual demonstration exists: ${visual}`);
 }
